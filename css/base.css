@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════
+   PixelVerse — design tokens & reset
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* surfaces — warm purple-black, never neutral grey */
+  --void:      #12101c;
+  --void-2:    #17142408;
+  --panel:     #1e1a2e;
+  --panel-hi:  #2a2440;
+  --line:      #372f52;
+
+  /* text */
+  --ink:       #e8e4f5;
+  --ink-dim:   #a79ec7;
+  --ink-mute:  #6f668f;
+
+  /* tool identity colours — each tool owns one */
+  --hot:       #ff2e88;   /* pencil   */
+  --cyan:      #22d3ee;   /* eraser   */
+  --lime:      #a3e635;   /* fill     */
+  --gold:      #fbbf24;   /* picker   */
+  --violet:    #a855f7;   /* frames   */
+  --danger:    #f43f5e;
+
+  /* type */
+  --font-display: 'Silkscreen', 'Courier New', monospace;
+  --font-body:    'Space Grotesk', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* geometry — hard edges only, this is a pixel tool */
+  --radius: 0px;
+  --border: 2px;
+
+  /* spacing scale */
+  --s1: 4px;  --s2: 8px;  --s3: 12px;
+  --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+}
+
+/* The hidden attribute must beat any display rule we set later.
+ * Without !important, a class like .ref-placeholder { display: flex }
+ * wins over the browser default [hidden] { display: none }, and the
+ * element stays visible even with the attribute set. */
+[hidden] { display: none !important; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+button, select, input { font-family: inherit; color: inherit; }
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  border: 1px solid var(--line);
+  padding: 1px 4px;
+  margin-left: auto;
+}
+
+/* ── view switching ── */
+.view { display: none; height: 100%; }
+.view.is-active { display: flex; flex-direction: column; }
+
+/* ── accessibility floor ── */
+:focus-visible {
+  outline: var(--border) solid var(--gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

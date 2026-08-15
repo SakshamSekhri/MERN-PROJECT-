@@ -1,0 +1,293 @@
+/* ═══════════════════════════════════════════════
+   View: Pixel Editor
+   ═══════════════════════════════════════════════ */
+
+/* ── topbar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  background: var(--panel);
+  border-bottom: var(--border) solid var(--line);
+  flex-shrink: 0;
+}
+.topbar__spacer { flex: 1; }
+
+.topbar__back {
+  background: transparent;
+  border: var(--border) solid var(--line);
+  width: 30px; height: 30px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.topbar__back:hover { border-color: var(--hot); color: var(--hot); }
+
+.topbar__brand {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: .04em;
+}
+.topbar__crumb {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-mute);
+  border-left: 1px solid var(--line);
+  padding-left: var(--s3);
+}
+
+/* ── 3-column workspace ── */
+.editor {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 210px 1fr 210px;
+  min-height: 0;
+}
+
+.rail {
+  background: var(--panel);
+  padding: var(--s4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.rail--left  { border-right: var(--border) solid var(--line); }
+.rail--right { border-left:  var(--border) solid var(--line); }
+
+.rail__heading {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin: var(--s2) 0 var(--s1);
+}
+.rail__row { display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s2); }
+
+/* ── tools: each owns an identity colour ── */
+.toolset { display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s3); }
+
+.tool {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s3);
+  background: transparent;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.tool:hover { background: var(--panel-hi); }
+
+.tool[data-accent="hot"].is-active   { border-color: var(--hot);    color: var(--hot);    background: color-mix(in srgb, var(--hot) 14%, transparent); }
+.tool[data-accent="cyan"].is-active  { border-color: var(--cyan);   color: var(--cyan);   background: color-mix(in srgb, var(--cyan) 14%, transparent); }
+.tool[data-accent="lime"].is-active  { border-color: var(--lime);   color: var(--lime);   background: color-mix(in srgb, var(--lime) 14%, transparent); }
+.tool[data-accent="gold"].is-active  { border-color: var(--gold);   color: var(--gold);   background: color-mix(in srgb, var(--gold) 14%, transparent); }
+
+/* ── canvas stage ── */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  padding: var(--s5);
+  min-height: 0;
+  background:
+    radial-gradient(700px 420px at 50% 40%, #241d3d 0%, transparent 70%),
+    var(--void);
+}
+
+.stage__frame {
+  border: var(--border) solid var(--line);
+  box-shadow: 0 0 0 6px var(--void), 0 12px 40px #0008;
+  line-height: 0;
+}
+
+#paint-canvas {
+  display: block;
+  width: min(64vh, 640px);
+  height: min(64vh, 640px);
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.stage__status {
+  display: flex;
+  gap: var(--s5);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.stat { display: flex; align-items: baseline; gap: var(--s2); }
+.stat em {
+  font-style: normal;
+  color: var(--ink-mute);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.stat b { color: var(--ink); font-weight: 400; }
+
+/* ── responsive: rails collapse under the canvas ── */
+@media (max-width: 900px) {
+  .editor { grid-template-columns: 1fr; grid-auto-rows: min-content; overflow-y: auto; }
+  .rail--left, .rail--right { border: none; border-top: var(--border) solid var(--line); }
+  .toolset { flex-direction: row; flex-wrap: wrap; }
+  .tool kbd { display: none; }
+  #paint-canvas { width: min(88vw, 520px); height: min(88vw, 520px); }
+}
+
+/* ═══════════════════════════════════════════════
+   Frame timeline (milestone 2)
+   Violet is the frame/animation colour throughout.
+   ═══════════════════════════════════════════════ */
+
+.filmstrip {
+  width: 100%;
+  max-width: 720px;
+  border: var(--border) solid var(--line);
+  background: var(--panel);
+  padding: var(--s3);
+  flex-shrink: 0;
+}
+
+.filmstrip__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+.filmstrip__head .rail__heading { margin: 0; }
+
+.filmstrip__actions { display: flex; gap: var(--s2); }
+
+.btn--sm { font-size: 11px; padding: var(--s1) var(--s2); }
+
+.filmstrip__track {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding-bottom: var(--s2);
+  min-height: 78px;
+  scrollbar-width: thin;
+}
+.filmstrip__track::-webkit-scrollbar { height: 6px; }
+.filmstrip__track::-webkit-scrollbar-thumb { background: var(--line); }
+
+.frame-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s1);
+  border: var(--border) solid var(--line);
+  background: var(--void);
+  cursor: pointer;
+  transition: border-color .12s, transform .08s;
+}
+.frame-item:hover { border-color: var(--ink-dim); }
+
+.frame-item.is-active {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 1px var(--violet);
+}
+.frame-item.is-active .frame-item__no { color: var(--violet); }
+
+.frame-item.is-dragging { opacity: .4; }
+.frame-item.is-over     { border-color: var(--gold); transform: translateY(-2px); }
+
+.frame-item__thumb {
+  display: block;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.frame-item__no {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: .08em;
+}
+
+.filmstrip__hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  margin: var(--s2) 0 0;
+  letter-spacing: .04em;
+}
+.filmstrip__hint kbd { margin-left: 0; }
+
+/* the stage now stacks canvas + filmstrip, so stop centring vertically */
+.stage { justify-content: flex-start; overflow-y: auto; }
+
+@media (max-width: 900px) {
+  .filmstrip__head { flex-direction: column; align-items: flex-start; }
+}
+
+/* ═══════════════════════════════════════════════
+   Onion skin controls (milestone 3)
+   ═══════════════════════════════════════════════ */
+
+.onion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+
+.onion__slider { display: flex; align-items: center; gap: var(--s2); }
+
+.onion__readout {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  min-width: 30px;
+  text-align: right;
+}
+
+.onion__hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  margin: 0;
+  letter-spacing: .04em;
+}
+
+/* ── range input, restyled to match the blocky UI ── */
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  background: var(--line);
+  cursor: pointer;
+  border: none;
+}
+.range:disabled { opacity: .35; cursor: not-allowed; }
+
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 16px;
+  background: var(--cyan);
+  border: none;
+  cursor: pointer;
+}
+.range::-moz-range-thumb {
+  width: 12px;
+  height: 16px;
+  background: var(--cyan);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
