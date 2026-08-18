@@ -76,7 +76,10 @@ async function handleFile(file) {
   try {
     // Free the previous blob URL before replacing it, or every upload in a
     // session leaks its image.
-    releaseImage(sourceImage);
+// Free the previous blob URL before replacing it, or every upload in a
+    // session leaks its image — unless the editor is still using it as a
+    // live reference, in which case revoking would break re-pixelation.
+    if (sourceImage !== state.reference?.image) releaseImage(sourceImage);
 
     sourceImage = await loadImageFromFile(file);
     document.getElementById('ref-source').src = sourceImage.src;
@@ -215,7 +218,15 @@ function bindActions() {
     if (!result || stale) return;
     // Hand the editor a grid, not an image. Milestone 6 renders it beside
     // the drawing canvas; for now it also sets the working resolution.
-    state.reference = { grid: result.grid, palette: result.palette };
+// Keep the source image and the settings used, not just the grid.
+    // Changing the canvas size later re-pixelates from the original photo,
+    // which is far better than rescaling an already-pixelated grid.
+    state.reference = {
+      grid: result.grid,
+      palette: result.palette,
+      image: sourceImage,
+      options: readOptions(),
+    };
     state.gridSize = result.grid.length;
     const sizeSelect = document.getElementById('grid-size');
     sizeSelect.value = String(state.gridSize);
@@ -224,6 +235,7 @@ function bindActions() {
   });
 
   document.getElementById('btn-ref-reset').addEventListener('click', () => {
+    if (sourceImage !== state.reference?.image) releaseImage(sourceImage);
     releaseImage(sourceImage);
     sourceImage = null;
     result = null;

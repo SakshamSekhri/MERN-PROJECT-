@@ -291,3 +291,188 @@
   border-radius: 0;
   cursor: pointer;
 }
+
+/* ═══════════════════════════════════════════════
+   Reference panel (milestone 6)
+   Cyan is the reference colour, as in the upload view.
+   ═══════════════════════════════════════════════ */
+
+.stage__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s4);
+  max-width: 100%;
+}
+
+.refpanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  width: 268px;
+  flex-shrink: 0;
+  border: var(--border) solid var(--cyan);
+  background: var(--panel);
+  padding: var(--s3);
+}
+
+.refpanel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+.refpanel__head .rail__heading { margin: 0; color: var(--cyan); }
+
+.refpanel__zoom { display: flex; align-items: center; gap: var(--s1); }
+.refpanel__readout {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Zoom is CSS-only and the container scrolls, so the reference never
+   resamples — it just gets bigger and you pan around it. */
+.refpanel__scroll {
+  overflow: auto;
+  max-height: 320px;
+  background: var(--void);
+  border: 1px solid var(--line);
+  scrollbar-width: thin;
+}
+.refpanel__scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.refpanel__scroll::-webkit-scrollbar-thumb { background: var(--line); }
+
+#ref-canvas {
+  display: block;
+  width: 240px;
+  height: 240px;
+  image-rendering: pixelated;
+}
+
+.refpanel__hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  margin: 0;
+  letter-spacing: .04em;
+}
+.refpanel__hint.is-warn { color: var(--gold); }
+
+/* the underlay toggle borrows the cyan identity */
+#btn-ref-underlay.is-on,
+#btn-ref-panel.is-on { border-color: var(--cyan); color: var(--cyan); }
+
+@media (max-width: 1100px) {
+  .stage__row { flex-direction: column; align-items: center; }
+  .refpanel { width: min(100%, 420px); }
+}
+
+
+/* ── onion skin depth (multi-frame ghosting) ── */
+.onion__depth {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+.depth-options { display: flex; gap: var(--s1); }
+
+.depth {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  width: 26px;
+  padding: 2px 0;
+  background: transparent;
+  border: var(--border) solid var(--line);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.depth:hover:not(:disabled) { border-color: var(--ink-dim); }
+.depth:disabled { opacity: .3; cursor: not-allowed; }
+.depth.is-active:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 14%, transparent);
+}
+
+/* ═══════════════════════════════════════════════
+   Accuracy score (milestone 7)
+   Lime is the "correct / measured" colour.
+   ═══════════════════════════════════════════════ */
+
+.btn--lime {
+  border-color: var(--lime);
+  color: var(--lime);
+  background: transparent;
+}
+.btn--lime:hover:not(:disabled) { background: color-mix(in srgb, var(--lime) 16%, transparent); }
+
+.score {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  border: var(--border) solid var(--line);
+  background: var(--void);
+  padding: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.score__headline {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.score__big {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--lime);
+  line-height: 1;
+}
+.score__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.score__split { display: flex; gap: var(--s4); }
+.score__cell { display: flex; flex-direction: column; gap: 2px; }
+.score__num { font-family: var(--font-mono); font-size: 15px; color: var(--ink); }
+.score__cap {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.score__verdict {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.score__errors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-mute);
+}
+.score__errors b { color: var(--ink); margin-left: auto; font-weight: 400; }
+.score__errors li { display: flex; align-items: center; gap: var(--s2); }
+
+/* legend dots match the on-canvas marker colours exactly */
+.dot { width: 9px; height: 9px; flex-shrink: 0; }
+.dot--missing { background: var(--cyan); }
+.dot--extra   { background: var(--danger); }
+.dot--wrong   { background: var(--gold); }

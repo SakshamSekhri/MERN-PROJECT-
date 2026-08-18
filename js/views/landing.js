@@ -8,6 +8,8 @@
  */
 
 import { go } from '../core/router.js';
+import { state } from '../core/state.js';
+import { releaseImage } from '../image/pixelate.js';
 
 // A 16×16 sprite, described as [x, y, colour] in drawing order.
 // Order matters: this *is* the delta list.
@@ -59,7 +61,16 @@ export function initLanding() {
   // Bind navigation FIRST. Anything below can fail without leaving the user
   // stuck on a dead button.
   const blank = document.querySelector('[data-action="blank"]');
-  if (blank) blank.addEventListener('click', () => go('editor'));
+  if (blank) blank.addEventListener('click', () => {
+    // "Blank canvas" means blank. Drop any reference left over from an
+    // earlier session in this tab, and free its blob so it does not leak.
+    if (state.reference) {
+      releaseImage(state.reference.image);
+      state.reference = null;
+      state.refUnderlay = false;
+    }
+    go('editor');
+  });
 
   const image = document.querySelector('[data-action="image"]');
   if (image) image.addEventListener('click', () => go('reference'));

@@ -26,12 +26,26 @@ export const state = {
   // onion skin — display only, never merged into the active grid
   onionEnabled: true,
   onionOpacity: 0.3,
+  onionDepth: 5,             // how many previous frames to ghost, 1-3
 
   // animation (milestone 4)
   fps: 12,
   loop: true,
+
   // reference (milestone 5) — { grid, palette } or null
   reference: null,
+
+  // reference viewing (milestone 6)
+  refPanelOpen: true,        // side-by-side panel
+  refUnderlay: false,        // ghost it beneath the canvas instead
+  refOpacity: 0.35,          // underlay strength
+  refZoom: 1,                // panel zoom, 1-4x
+  refShowGrid: true,         // grid lines on the panel
+  // comparison (milestone 7)
+  comparison: null,          // last compareGrids() result, or null
+  showErrors: true,          // draw error markers on the canvas
+  tolerance: 0.12,           // colour match tolerance, 0-1
+  
 };
 
 /** The frame currently being edited. */

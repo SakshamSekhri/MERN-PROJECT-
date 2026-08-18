@@ -5,22 +5,39 @@
  * real work to canvas/* and frames/*. When the reference split-view arrives
  * in Milestone 6 it reuses these same modules rather than duplicating logic.
  */
+/**
+ * Pixel editor view controller.
+ *
+ * Thin by design: it owns DOM wiring and pointer handling, and delegates all
+ * real work to canvas/*, frames/* and image/*. The reference split-view
+ * reuses these same modules rather than duplicating logic.
+ */
 
 import {
   state, PALETTE, pushRecentColor,
   currentFrame, currentGrid, currentHistory,
 } from '../core/state.js';
-import { countFilled } from '../canvas/grid.js';
+import { countFilled, resampleGrid } from '../canvas/grid.js';
 import { Renderer, drawThumbnail } from '../canvas/renderer.js';
-import { resolveOnion, hasPreviousFrame } from '../canvas/onionSkin.js';
+import {
+  resolveOnion, hasPreviousFrame, describeOnion, ONION_MAX_DEPTH,
+} from '../canvas/onionSkin.js';
+
+import {
+  resolveReferenceUnderlay, referenceMatchesGrid, describeReference,
+} from '../canvas/referenceLayer.js';
 import { pencil, eraser, fill, pick } from '../canvas/tools.js';
 import {
   makeFrame, addFrame, deleteFrame, moveFrame, resizeAllFrames,
 } from '../frames/frameManager.js';
 import { Timeline } from '../frames/timeline.js';
-import { go } from '../core/router.js';
+import { imageToGrid } from '../image/pixelate.js';
+import {
+  compareGrids, formatScore, describeResult, DEFAULT_TOLERANCE,
+} from '../compare/similarity.js';
+import { go, onEnter } from '../core/router.js';
 
-let renderer, timeline;
+let renderer, refRenderer, timeline;
 let painting = false;
 let lastCell = { x: -1, y: -1 };
 
@@ -30,7 +47,13 @@ export function initEditor() {
   bindColor();
   bindFrames();
   bindOnion();
+  bindReference();
+  bindComparison();
   bindKeyboard();
+
+  // The reference is chosen in another view, so re-sync every time the
+  // editor opens rather than only once at boot.
+  onEnter('editor', () => { renderReferencePanel(); redraw(); });
 
   // Start with exactly one frame — the editor is never in a zero-frame state.
   state.frames = [makeFrame(state.gridSize)];
@@ -64,10 +87,33 @@ function redraw({ timelineToo = true } = {}) {
   const onion = resolveOnion(state.frames, state.activeFrame, {
   enabled: state.onionEnabled,
   opacity: state.onionOpacity,
+  depth: state.onionDepth,
+    
+
 });
 
-renderer.draw(grid, { showGridLines: state.showGridLines, onion });
-updateOnionUI();
+
+
+
+
+const reference = resolveReferenceUnderlay(state.reference, {
+    enabled: state.refUnderlay,
+    opacity: state.refOpacity,
+    gridSize: state.gridSize,
+  });
+
+// Error markers only survive while the drawing is unchanged. Any edit
+  // invalidates them, so they are cleared on the next stroke rather than
+  // left pointing at cells the user has already fixed.
+  const errors = state.showErrors && state.comparison
+    ? state.comparison.errors
+    : null;
+
+  renderer.draw(grid, {
+    showGridLines: state.showGridLines, onion, reference, errors,
+  });
+  updateOnionUI();
+  updateReferenceUI();
 
   document.getElementById('stat-filled').textContent = countFilled(grid);
   document.getElementById('stat-steps').textContent = history.steps;
@@ -105,6 +151,7 @@ function redrawFast() {
 }
 
 /* ─────────────── frames ─────────────── */
+clearComparison();          // the score belonged to the frame we just left
 
 function selectFrame(index) {
   if (index === state.activeFrame) return;
@@ -158,6 +205,13 @@ function bindOnion() {
     state.onionOpacity = Number(e.target.value) / 100;
     redraw({ timelineToo: false });
   });
+
+  document.querySelectorAll('.depth').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.onionDepth = Math.min(Number(btn.dataset.depth), ONION_MAX_DEPTH);
+      redraw({ timelineToo: false });
+    });
+  });
 }
 
 /** Keep the toggle, slider and hint honest about what is actually showing. */
@@ -175,13 +229,209 @@ function updateOnionUI() {
   readout.textContent = `${Math.round(state.onionOpacity * 100)}%`;
 
   // Say why nothing is showing rather than leaving the artist guessing.
-  hint.textContent = !available
-    ? 'Frame 1 has nothing before it'
-    : state.onionEnabled
-      ? `Ghosting frame ${state.activeFrame}`
-      : 'Off';
+ // Say what is showing, or why nothing is, rather than leaving the artist
+  // guessing at a toggle that appears to do nothing.
+  hint.textContent = describeOnion(
+    state.activeFrame, state.onionDepth, state.onionEnabled
+  );
+
+  // Depth beyond the number of earlier frames is meaningless — on frame 2
+  // there is only one frame behind you, however high the setting goes.
+  document.querySelectorAll('.depth').forEach(btn => {
+    const d = Number(btn.dataset.depth);
+    btn.classList.toggle('is-active', d === state.onionDepth);
+    btn.disabled = !state.onionEnabled || d > state.activeFrame;
+  });
 }
 
+
+/* ─────────────── reference ─────────────── */
+
+/**
+ * Paint the side panel.
+ *
+ * A separate Renderer instance on its own canvas — the reference is never
+ * drawn through the main renderer, so there is no path by which a reference
+ * cell could end up in the artwork.
+ */
+
+
+
+/**
+ * Rebuild the reference at a new canvas resolution.
+ *
+ * Two paths, and the difference matters:
+ *
+ *   with a source image — re-run the full pipeline against the original
+ *     photo. Every cell is re-averaged from full-resolution pixels, so a
+ *     16x16 reference promoted to 64x64 gains real detail.
+ *
+ *   without one — nearest-neighbour rescale of the existing grid. Can only
+ *     duplicate or drop cells that are already there, so 16 to 64 gives 4x4
+ *     blocks. Honest fallback, never the preferred path.
+ *
+ * Either way the reference ends up matching the canvas, so the underlay
+ * lines up and Milestone 7 can compare cell against cell.
+ */
+function retargetReference(size) {
+  const ref = state.reference;
+  if (!ref?.grid) return;
+  if (ref.grid.length === size) return;
+
+  if (ref.image) {
+    const next = imageToGrid(ref.image, size, ref.options ?? {});
+    ref.grid = next.grid;
+    ref.palette = next.palette;
+  } else {
+    ref.grid = resampleGrid(ref.grid, size);
+  }
+}
+
+function renderReferencePanel() {
+  const panel = document.getElementById('refpanel');
+  const has = Boolean(state.reference?.grid);
+
+  panel.hidden = !has || !state.refPanelOpen;
+  if (!has) return;
+
+  const canvas = document.getElementById('ref-canvas');
+  if (!refRenderer || refRenderer.canvas !== canvas) {
+    refRenderer = new Renderer(canvas);
+  }
+  refRenderer.draw(state.reference.grid, { showGridLines: state.refShowGrid });
+
+  // Zoom is CSS-only. The canvas keeps its pixel resolution and the container
+  // scrolls, so zooming never resamples or degrades the reference.
+  canvas.style.width = `${240 * state.refZoom}px`;
+  canvas.style.height = `${240 * state.refZoom}px`;
+}
+
+function updateReferenceUI() {
+  const has = Boolean(state.reference?.grid);
+  const matches = referenceMatchesGrid(state.reference, state.gridSize);
+
+  // No reference means no reference controls. The blank-canvas path should
+  // not advertise a feature it does not have — a row of permanently disabled
+  // buttons is worse than no row at all.
+  document.getElementById('ref-controls').hidden = !has;
+  document.getElementById('btn-compare').disabled = !matches;
+  if (!has) return;
+
+  const toggle = document.getElementById('btn-ref-panel');
+  toggle.classList.toggle('is-on', state.refPanelOpen);
+  toggle.textContent = state.refPanelOpen ? 'Hide reference' : 'Show reference';
+
+  const under = document.getElementById('btn-ref-underlay');
+  under.disabled = !matches;
+  under.classList.toggle('is-on', matches && state.refUnderlay);
+
+  const slider = document.getElementById('ref-underlay-opacity');
+  slider.disabled = !matches || !state.refUnderlay;
+  slider.value = Math.round(state.refOpacity * 100);
+  document.getElementById('ref-underlay-readout').textContent =
+    `${Math.round(state.refOpacity * 100)}%`;
+
+  const hint = document.getElementById('ref-panel-hint');
+  hint.textContent = describeReference(state.reference, state.gridSize);
+  hint.classList.toggle('is-warn', has && !matches);
+
+  document.getElementById('ref-zoom-readout').textContent = `${state.refZoom}x`;
+}
+
+/* ─────────────── comparison ─────────────── */
+
+function runComparison() {
+  const ref = state.reference?.grid;
+  if (!ref) return;
+
+  state.comparison = compareGrids(currentGrid(), ref, {
+    tolerance: state.tolerance,
+  });
+  updateComparisonUI();
+  redraw({ timelineToo: false });
+}
+
+/** Drop the result — the markers would be stale the moment anything changes. */
+function clearComparison() {
+  if (!state.comparison) return;
+  state.comparison = null;
+  updateComparisonUI();
+}
+
+function updateComparisonUI() {
+  const panel = document.getElementById('score-panel');
+  const r = state.comparison;
+
+  panel.hidden = !r;
+  if (!r) return;
+
+  document.getElementById('score-overall').textContent = formatScore(r.overall);
+  document.getElementById('score-placement').textContent = formatScore(r.placement);
+  document.getElementById('score-color').textContent = formatScore(r.color);
+  document.getElementById('score-verdict').textContent = describeResult(r);
+
+  document.getElementById('score-missing').textContent = r.counts.missing;
+  document.getElementById('score-extra').textContent = r.counts.extra;
+  document.getElementById('score-wrong').textContent = r.counts.wrong;
+
+  const toggle = document.getElementById('btn-show-errors');
+  toggle.classList.toggle('is-on', state.showErrors);
+  toggle.textContent = state.showErrors ? 'Hide mistakes' : 'Show mistakes';
+}
+
+function bindComparison() {
+  document.getElementById('btn-compare').addEventListener('click', runComparison);
+
+  document.getElementById('btn-show-errors').addEventListener('click', () => {
+    state.showErrors = !state.showErrors;
+    updateComparisonUI();
+    redraw({ timelineToo: false });
+  });
+
+  document.getElementById('tolerance').addEventListener('input', e => {
+    state.tolerance = Number(e.target.value) / 100;
+    document.getElementById('tolerance-readout').textContent = `${e.target.value}%`;
+    if (state.comparison) runComparison();     // rescore live
+  });
+}
+
+function bindReference() {
+  document.getElementById('btn-ref-panel').addEventListener('click', () => {
+    state.refPanelOpen = !state.refPanelOpen;
+    renderReferencePanel();
+    updateReferenceUI();
+  });
+
+  document.getElementById('btn-ref-underlay').addEventListener('click', () => {
+    state.refUnderlay = !state.refUnderlay;
+    redraw({ timelineToo: false });
+  });
+
+  document.getElementById('ref-underlay-opacity').addEventListener('input', e => {
+    state.refOpacity = Number(e.target.value) / 100;
+    redraw({ timelineToo: false });
+  });
+
+  document.getElementById('ref-zoom-in').addEventListener('click', () => {
+    state.refZoom = Math.min(4, state.refZoom + 1);
+    renderReferencePanel();
+    updateReferenceUI();
+  });
+
+  document.getElementById('ref-zoom-out').addEventListener('click', () => {
+    state.refZoom = Math.max(1, state.refZoom - 1);
+    renderReferencePanel();
+    updateReferenceUI();
+  });
+
+  document.getElementById('btn-ref-gridlines').addEventListener('click', e => {
+    state.refShowGrid = !state.refShowGrid;
+    e.currentTarget.classList.toggle('is-on', state.refShowGrid);
+    renderReferencePanel();
+  });
+
+  document.getElementById('btn-ref-new').addEventListener('click', () => go('reference'));
+}
 
 /* ─────────────── palette ─────────────── */
 
@@ -308,19 +558,22 @@ function stroke(x, y) {
     if (changed) redraw();
     return;
   }
-  if (changed) redrawFast();
+if (changed) { clearComparison(); redrawFast(); }
 }
+
 
 /* ─────────────── topbar ─────────────── */
 
 function bindTopbar() {
   document.querySelector('[data-action="home"]').addEventListener('click', () => go('landing'));
 
-  document.getElementById('grid-size').addEventListener('change', e => {
+document.getElementById('grid-size').addEventListener('change', e => {
     const next = Number(e.target.value);
     // Every frame resizes together — an animation cannot mix grid sizes.
     resizeAllFrames(state.frames, next);
     state.gridSize = next;
+    retargetReference(next);
+    renderReferencePanel();
     redraw();
   });
 

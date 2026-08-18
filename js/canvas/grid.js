@@ -44,3 +44,31 @@ export function resizeGrid(grid, newSize) {
   }
   return next;
 }
+
+
+
+/**
+ * Rescale a grid to a new cell count by nearest-neighbour sampling.
+ *
+ * This is a FALLBACK, not the preferred path. Re-pixelating from the original
+ * photo always looks better, because it re-averages the full-resolution
+ * source. Nearest-neighbour can only duplicate or drop cells that are already
+ * there, so upscaling 16 to 64 gives chunky 4x4 blocks rather than detail.
+ *
+ * It exists for references with no source image behind them — a project
+ * loaded from storage, for instance.
+ */
+export function resampleGrid(grid, newSize) {
+  const oldSize = grid.length;
+  if (oldSize === newSize) return cloneGrid(grid);
+
+  const out = createGrid(newSize);
+  for (let y = 0; y < newSize; y++) {
+    for (let x = 0; x < newSize; x++) {
+      const sy = Math.min(oldSize - 1, Math.floor((y * oldSize) / newSize));
+      const sx = Math.min(oldSize - 1, Math.floor((x * oldSize) / newSize));
+      out[y][x] = grid[sy][sx];
+    }
+  }
+  return out;
+}
