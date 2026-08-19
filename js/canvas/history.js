@@ -25,6 +25,7 @@ export class History {
     this.redoStack = [];
     this.pending = null;
   }
+  static onAnyCommit=null;
 
   /** Open a step. Deltas recorded until commit() belong to it. */
   begin() {
@@ -42,6 +43,14 @@ export class History {
     if (!this.pending || this.pending.length === 0) {
       this.pending = null;
       return false;
+    }
+    if (History.onAnyCommit) {
+      try {
+        History.onAnyCommit(this.pending, this);
+      } catch (err) {
+        // A broken journal must never break drawing.
+        console.warn('[history] journal hook threw', err);
+      }
     }
     this.undoStack.push(this.pending);
     if (this.undoStack.length > this.limit) this.undoStack.shift();

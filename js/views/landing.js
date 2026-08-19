@@ -61,19 +61,19 @@ export function initLanding() {
   // Bind navigation FIRST. Anything below can fail without leaving the user
   // stuck on a dead button.
   const blank = document.querySelector('[data-action="blank"]');
-  if (blank) blank.addEventListener('click', () => {
-    // "Blank canvas" means blank. Drop any reference left over from an
-    // earlier session in this tab, and free its blob so it does not leak.
+  if (blank) blank.addEventListener('click', (e) => {
     if (state.reference) {
       releaseImage(state.reference.image);
       state.reference = null;
       state.refUnderlay = false;
     }
-    go('editor');
+    window.location.href = 'blank.html';
   });
 
   const image = document.querySelector('[data-action="image"]');
-  if (image) image.addEventListener('click', () => go('reference'));
+  if (image) image.addEventListener('click', (e) => {
+    window.location.href = 'image.html';
+  });
 
   const canvas = document.getElementById('hero-canvas');
   const countEl = document.getElementById('hero-count');

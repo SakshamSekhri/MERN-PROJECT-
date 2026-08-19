@@ -1,0 +1,185 @@
+/* ═══════════════════════════════════════════════
+   Replay overlay
+   The delta log made visible — deliberately full
+   screen, because watching the art rebuild is the
+   point, not a side panel.
+   ═══════════════════════════════════════════════ */
+
+.replay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s5);
+  background: rgba(8, 6, 16, .88);
+  backdrop-filter: blur(3px);
+}
+
+.replay__sheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--panel);
+  border: var(--border) solid var(--violet);
+  box-shadow: 0 0 0 6px #0006, 0 24px 70px #000a;
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+/* ── header ── */
+.replay__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+.replay__title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--violet);
+  letter-spacing: .04em;
+}
+.replay__sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: .08em;
+}
+.replay__close {
+  margin-left: auto;
+  background: transparent;
+  border: var(--border) solid var(--line);
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.replay__close:hover { border-color: var(--danger); color: var(--danger); }
+
+.replay__empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-mute);
+  text-align: center;
+  padding: var(--s6) 0;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── stage ── */
+.replay__player { display: flex; flex-direction: column; gap: var(--s4); }
+
+.replay__stage {
+  display: flex;
+  justify-content: center;
+  background: var(--void);
+  border: var(--border) solid var(--line);
+  padding: var(--s3);
+}
+
+#replay-canvas {
+  display: block;
+  width: min(46vh, 380px);
+  height: min(46vh, 380px);
+  image-rendering: pixelated;
+}
+
+/* ── readout ── */
+.replay__readout {
+  display: flex;
+  justify-content: center;
+  gap: var(--s5);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.replay__readout span { display: flex; align-items: baseline; gap: var(--s2); }
+.replay__readout em {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.replay__readout b { font-weight: 400; color: var(--lime); }
+
+/* ── scrub ── */
+.replay__scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--line);
+  cursor: pointer;
+  border: none;
+}
+.replay__scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 20px;
+  background: var(--violet);
+  border: none;
+  cursor: pointer;
+}
+.replay__scrub::-moz-range-thumb {
+  width: 10px;
+  height: 20px;
+  background: var(--violet);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* ── controls ── */
+.replay__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+.replay__controls .btn--play {
+  min-width: 104px;
+  justify-content: center;
+  font-family: var(--font-mono);
+  border-color: var(--violet);
+  color: var(--violet);
+  background: transparent;
+}
+.replay__controls .btn--play.is-playing {
+  background: var(--violet);
+  color: var(--void);
+}
+
+.replay__speeds { display: flex; gap: var(--s1); }
+.replay__speed {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: var(--s1) var(--s2);
+  background: transparent;
+  border: var(--border) solid var(--line);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+.replay__speed:hover { border-color: var(--ink-dim); }
+.replay__speed.is-active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+}
+
+#replay-mode.is-on { border-color: var(--cyan); color: var(--cyan); }
+
+/* stop the page scrolling behind the overlay */
+body.is-replaying { overflow: hidden; }
+
+@media (max-width: 560px) {
+  .replay__sheet { padding: var(--s3); }
+  #replay-canvas { width: min(78vw, 300px); height: min(78vw, 300px); }
+}

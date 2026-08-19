@@ -26,7 +26,7 @@ export const state = {
   // onion skin — display only, never merged into the active grid
   onionEnabled: true,
   onionOpacity: 0.3,
-  onionDepth: 5,             // how many previous frames to ghost, 1-3
+  onionDepth: 1,             // how many previous frames to ghost, 1-3
 
   // animation (milestone 4)
   fps: 12,
@@ -50,17 +50,20 @@ export const state = {
 
 /** The frame currently being edited. */
 export function currentFrame() {
-  return state.frames[state.activeFrame];
+  if (!state.frames || state.frames.length === 0) return null;
+  return state.frames[state.activeFrame] || state.frames[0] || null;
 }
 
 /** Shorthand for the grid under the brush. */
 export function currentGrid() {
-  return currentFrame().grid;
+  const f = currentFrame();
+  return f ? f.grid : null;
 }
 
 /** Shorthand for the undo stack of the frame under the brush. */
 export function currentHistory() {
-  return currentFrame().history;
+  const f = currentFrame();
+  return f ? f.history : null;
 }
 
 /** Default 16-colour palette — warm/cool spread that suits sprite work. */

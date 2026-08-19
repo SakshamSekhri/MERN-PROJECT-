@@ -23,6 +23,7 @@ export class Timeline {
   }
 
   render(frames, activeIndex) {
+    if (!this.root || !frames) return;
     this.root.innerHTML = '';
 
     frames.forEach((frame, i) => {

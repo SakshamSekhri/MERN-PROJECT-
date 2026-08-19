@@ -2,15 +2,7 @@
  * Pixel editor view controller.
  *
  * Thin by design: it owns DOM wiring and pointer handling, and delegates all
- * real work to canvas/* and frames/*. When the reference split-view arrives
- * in Milestone 6 it reuses these same modules rather than duplicating logic.
- */
-/**
- * Pixel editor view controller.
- *
- * Thin by design: it owns DOM wiring and pointer handling, and delegates all
- * real work to canvas/*, frames/* and image/*. The reference split-view
- * reuses these same modules rather than duplicating logic.
+ * real work to canvas/*, frames/* and image/*.
  */
 
 import {
@@ -22,11 +14,10 @@ import { Renderer, drawThumbnail } from '../canvas/renderer.js';
 import {
   resolveOnion, hasPreviousFrame, describeOnion, ONION_MAX_DEPTH,
 } from '../canvas/onionSkin.js';
-
 import {
-  resolveReferenceUnderlay, referenceMatchesGrid, describeReference,
+  resolveReferenceUnderlay, referenceMatchesGrid, describeReference, updateReferenceGrid,
 } from '../canvas/referenceLayer.js';
-import { pencil, eraser, fill, pick } from '../canvas/tools.js';
+import { pencil, eraser, fill, pick, drawLine } from '../canvas/tools.js';
 import {
   makeFrame, addFrame, deleteFrame, moveFrame, resizeAllFrames,
 } from '../frames/frameManager.js';
@@ -36,75 +27,98 @@ import {
   compareGrids, formatScore, describeResult, DEFAULT_TOLERANCE,
 } from '../compare/similarity.js';
 import { go, onEnter } from '../core/router.js';
+import { playForgeTransition } from './forgeLoader.js';
+
+import { Journal } from '../core/journal.js';
+import { History } from '../canvas/history.js';
+import { openReplay } from './replayOverlay.js';
 
 let renderer, refRenderer, timeline;
 let painting = false;
 let lastCell = { x: -1, y: -1 };
 
 export function initEditor() {
+  if (!state.frames || state.frames.length === 0) {
+    state.frames = [makeFrame(state.gridSize)];
+    state.activeFrame = 0;
+  }
+
   const canvas = document.getElementById('paint-canvas');
-  renderer = new Renderer(canvas);
+  if (canvas) renderer = new Renderer(canvas);
+
   bindColor();
   bindFrames();
   bindOnion();
   bindReference();
-  bindComparison();
+  bindCompare();
+  bindTools();
+  if (canvas) bindPointer(canvas);
   bindKeyboard();
-
-  // The reference is chosen in another view, so re-sync every time the
-  // editor opens rather than only once at boot.
-  onEnter('editor', () => { renderReferencePanel(); redraw(); });
-
-  // Start with exactly one frame — the editor is never in a zero-frame state.
-  state.frames = [makeFrame(state.gridSize)];
-  state.activeFrame = 0;
-
-  timeline = new Timeline(document.getElementById('timeline'), {
-    onSelect: selectFrame,
-    onReorder: reorderFrame,
-  });
+  bindTopbar();
+  bindJournal();
 
   buildPalette();
-  bindTools();
-  bindPointer(canvas);
-  bindTopbar();
-  bindHistory();
-  bindColor();
-  bindFrames();
-  bindKeyboard();
-
+  renderRecent();
   setColor(state.color);
-  redraw();
+
+  const timelineEl = document.getElementById('timeline');
+  if (timelineEl) {
+    timeline = new Timeline(timelineEl, {
+      onSelect: selectFrame,
+      onReorder: reorderFrame,
+    });
+  }
+
+  onEnter('editor', () => {
+    if (!state.frames || state.frames.length === 0) {
+      state.frames = [makeFrame(state.gridSize)];
+      state.activeFrame = 0;
+    }
+    redraw();
+  });
 }
 
 /* ─────────────── rendering ─────────────── */
 
-/** Repaint the canvas and every readout that depends on the active frame. */
+let isFastRedrawScheduled = false;
+
+function scheduleFastRedraw() {
+  if (isFastRedrawScheduled) return;
+  isFastRedrawScheduled = true;
+  requestAnimationFrame(() => {
+    isFastRedrawScheduled = false;
+    const grid = currentGrid();
+    if (!grid || !renderer) return;
+    renderer.draw(grid, {
+      showGridLines: state.showGridLines,
+      onion: activeOnion(),
+      reference: activeReference(),
+      errors: state.showErrors && state.comparison ? state.comparison.errors : null,
+    });
+  });
+}
+
 function redraw({ timelineToo = true } = {}) {
+  if (!state.frames || state.frames.length === 0) {
+    state.frames = [makeFrame(state.gridSize)];
+    state.activeFrame = 0;
+  }
   const grid = currentGrid();
   const history = currentHistory();
+  if (!grid || !history || !renderer) return;
 
   const onion = resolveOnion(state.frames, state.activeFrame, {
-  enabled: state.onionEnabled,
-  opacity: state.onionOpacity,
-  depth: state.onionDepth,
-    
+    enabled: state.onionEnabled,
+    opacity: state.onionOpacity,
+    depth: state.onionDepth,
+  });
 
-});
-
-
-
-
-
-const reference = resolveReferenceUnderlay(state.reference, {
+  const reference = resolveReferenceUnderlay(state.reference, {
     enabled: state.refUnderlay,
     opacity: state.refOpacity,
     gridSize: state.gridSize,
   });
 
-// Error markers only survive while the drawing is unchanged. Any edit
-  // invalidates them, so they are cleared on the next stroke rather than
-  // left pointing at cells the user has already fixed.
   const errors = state.showErrors && state.comparison
     ? state.comparison.errors
     : null;
@@ -115,46 +129,178 @@ const reference = resolveReferenceUnderlay(state.reference, {
   updateOnionUI();
   updateReferenceUI();
 
-  document.getElementById('stat-filled').textContent = countFilled(grid);
-  document.getElementById('stat-steps').textContent = history.steps;
-  document.getElementById('stat-frame').textContent =
-    `${state.activeFrame + 1} / ${state.frames.length}`;
+  const filledEl = document.getElementById('stat-filled');
+  if (filledEl) filledEl.textContent = countFilled(grid);
+  const stepsEl = document.getElementById('stat-steps');
+  if (stepsEl) stepsEl.textContent = history.steps;
+  const statFrame = document.getElementById('stat-frame');
+  if (statFrame) {
+    statFrame.textContent = `${state.activeFrame + 1} / ${state.frames.length}`;
+  }
 
-  document.getElementById('btn-undo').disabled = !history.canUndo;
-  document.getElementById('btn-redo').disabled = !history.canRedo;
-  document.getElementById('btn-frame-delete').disabled = state.frames.length <= 1;
-// The studio opens with any number of frames — you can duplicate and
-  // arrange in there too. Only playback needs 2+, and the Play button
-  // disables itself.
-  const studioBtn = document.getElementById('btn-studio');
-  studioBtn.disabled = false;
-  studioBtn.title = state.frames.length < 2
-    ? 'Open the studio — add a frame to play an animation'
-    : 'Open the animation studio';
-  if (timelineToo) timeline.render(state.frames, state.activeFrame);
+  const btnUndo = document.getElementById('btn-undo');
+  if (btnUndo) btnUndo.disabled = !history.canUndo;
+  const btnRedo = document.getElementById('btn-redo');
+  if (btnRedo) btnRedo.disabled = !history.canRedo;
+  const btnDel = document.getElementById('btn-frame-delete');
+  if (btnDel) btnDel.disabled = state.frames.length <= 1;
+  const btnStudio = document.getElementById('btn-studio');
+  if (btnStudio) btnStudio.disabled = false;
+
+  if (timeline && timelineToo) {
+    timeline.render(state.frames, state.activeFrame);
+  } else {
+    const activeThumb = document.querySelector(
+      `#timeline .frame-item[data-index="${state.activeFrame}"] canvas`
+    );
+    if (activeThumb) drawThumbnail(activeThumb, grid);
+  }
+
+  renderReferencePanel();
 }
 
-/**
- * Cheap path for mid-stroke repaints.
- *
- * Rebuilding the whole timeline on every painted cell would destroy and
- * recreate every thumbnail element sixty times a second — and would kill an
- * in-progress drag. Instead repaint only the active frame's thumbnail in
- * place.
- */
-function redrawFast() {
-  redraw({ timelineToo: false });
-  const thumb = document.querySelector(
-    `.frame-item[data-index="${state.activeFrame}"] canvas`
-  );
-  if (thumb) drawThumbnail(thumb, currentGrid());
+function activeOnion() {
+  return resolveOnion(state.frames, state.activeFrame, {
+    enabled: state.onionEnabled,
+    opacity: state.onionOpacity,
+    depth: state.onionDepth,
+  });
 }
 
-/* ─────────────── frames ─────────────── */
-clearComparison();          // the score belonged to the frame we just left
+function activeReference() {
+  return resolveReferenceUnderlay(state.reference, {
+    enabled: state.refUnderlay,
+    opacity: state.refOpacity,
+    gridSize: state.gridSize,
+  });
+}
+
+/* ─────────────── comparison panel ─────────────── */
+
+function bindCompare() {
+  const btnCompare = document.getElementById('btn-compare');
+  if (btnCompare) {
+    btnCompare.addEventListener('click', () => {
+      if (!state.reference || !state.reference.grid) return;
+
+      if (state.comparison) {
+        state.comparison = null;
+        state.showErrors = false;
+      } else {
+        state.comparison = compareGrids(currentGrid(), state.reference.grid, {
+          tolerance: state.compareTolerance,
+        });
+        state.showErrors = true;
+      }
+      renderCompareResults();
+      redraw();
+    });
+  }
+
+  const btnClose = document.getElementById('btn-close-compare');
+  if (btnClose) {
+    btnClose.addEventListener('click', () => {
+      state.comparison = null;
+      state.showErrors = false;
+      renderCompareResults();
+      redraw();
+    });
+  }
+
+  const tol = document.getElementById('tolerance');
+  if (tol) {
+    tol.addEventListener('input', e => {
+      state.compareTolerance = e.target.value / 100;
+      const tolReadout = document.getElementById('tolerance-readout');
+      if (tolReadout) tolReadout.textContent = `${e.target.value}%`;
+      if (state.comparison) {
+        state.comparison = compareGrids(currentGrid(), state.reference.grid, {
+          tolerance: state.compareTolerance,
+        });
+        renderCompareResults();
+        redraw();
+      }
+    });
+  }
+
+  const btnShowErr = document.getElementById('btn-show-errors');
+  if (btnShowErr) {
+    btnShowErr.addEventListener('click', e => {
+      state.showErrors = !state.showErrors;
+      e.target.classList.toggle('is-on', state.showErrors);
+      e.target.textContent = state.showErrors ? 'Hide mistakes' : 'Show mistakes';
+      redraw();
+    });
+  }
+}
+
+function renderCompareResults() {
+  const res = state.comparison;
+  const panel = document.getElementById('score-panel');
+  const btnCompare = document.getElementById('btn-compare');
+
+  if (btnCompare) {
+    btnCompare.classList.toggle('is-on', Boolean(res));
+    btnCompare.textContent = res ? 'Cancel comparison' : 'Compare with reference';
+  }
+
+  if (!panel) return;
+  if (!res) { panel.hidden = true; return; }
+
+  panel.hidden = false;
+  const overallEl = document.getElementById('score-overall');
+  if (overallEl) overallEl.textContent = formatScore(res.overall);
+  const placeEl = document.getElementById('score-placement');
+  if (placeEl) placeEl.textContent = formatScore(res.placement);
+  const colorEl = document.getElementById('score-color');
+  if (colorEl) colorEl.textContent = formatScore(res.color);
+  const verdictEl = document.getElementById('score-verdict');
+  if (verdictEl) verdictEl.textContent = describeResult(res);
+
+  const missingEl = document.getElementById('score-missing');
+  if (missingEl) missingEl.textContent = res.counts.missing;
+  const extraEl = document.getElementById('score-extra');
+  if (extraEl) extraEl.textContent = res.counts.extra;
+  const wrongEl = document.getElementById('score-wrong');
+  if (wrongEl) wrongEl.textContent = res.counts.wrong;
+}
+
+/* ─────────────── frames timeline ─────────────── */
+
+function bindFrames() {
+  const btnEmpty = document.getElementById('btn-frame-empty');
+  if (btnEmpty) {
+    btnEmpty.addEventListener('click', () => {
+      const next = addFrame(state.frames, state.activeFrame, state.gridSize, 'empty');
+      selectFrame(next);
+    });
+  }
+
+  const btnDupe = document.getElementById('btn-frame-dupe');
+  if (btnDupe) {
+    btnDupe.addEventListener('click', () => {
+      const next = addFrame(state.frames, state.activeFrame, state.gridSize, 'duplicate');
+      selectFrame(next);
+    });
+  }
+
+  const btnDel = document.getElementById('btn-frame-delete');
+  if (btnDel) {
+    btnDel.addEventListener('click', () => {
+      const next = deleteFrame(state.frames, state.activeFrame);
+      if (next === null) return;
+      state.activeFrame = next;
+      redraw();
+    });
+  }
+
+  const clearBtn = document.getElementById('btn-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearCanvas);
+  }
+}
 
 function selectFrame(index) {
-  if (index === state.activeFrame) return;
   if (index < 0 || index >= state.frames.length) return;
   state.activeFrame = index;
   redraw();
@@ -163,136 +309,143 @@ function selectFrame(index) {
 function reorderFrame(from, to) {
   const wasActive = state.frames[state.activeFrame];
   moveFrame(state.frames, from, to);
-  // Follow the frame the user was editing rather than holding the old index.
   state.activeFrame = state.frames.indexOf(wasActive);
   redraw();
 }
 
-function bindFrames() {
-  document.getElementById('btn-frame-empty').addEventListener('click', () => {
-    state.activeFrame = addFrame(state.frames, state.activeFrame, state.gridSize, 'empty');
-    redraw();
-  });
-
-  document.getElementById('btn-frame-dupe').addEventListener('click', () => {
-    state.activeFrame = addFrame(state.frames, state.activeFrame, state.gridSize, 'duplicate');
-    redraw();
-  });
-
-  document.getElementById('btn-frame-delete').addEventListener('click', () => {
-    const next = deleteFrame(state.frames, state.activeFrame);
-    if (next === null) return;          // last frame — refused
-    state.activeFrame = next;
-    redraw();
-  });
+function clearCanvas() {
+  const grid = currentGrid();
+  const history = currentHistory();
+  if (!grid || !history) return;
+  history.begin();
+  for (let y = 0; y < state.gridSize; y++) {
+    for (let x = 0; x < state.gridSize; x++) {
+      if (grid[y][x] !== null) {
+        history.record(x, y, grid[y][x], null);
+        grid[y][x] = null;
+      }
+    }
+  }
+  history.commit();
+  redraw();
 }
-
-
-
 
 /* ─────────────── onion skin ─────────────── */
 
 function bindOnion() {
-  const toggle = document.getElementById('btn-onion');
-  const slider = document.getElementById('onion-opacity');
+  const btnOnion = document.getElementById('btn-onion');
+  if (btnOnion) {
+    btnOnion.addEventListener('click', () => {
+      state.onionEnabled = !state.onionEnabled;
+      redraw({ timelineToo: false });
+    });
+  }
 
-  toggle.addEventListener('click', () => {
-    state.onionEnabled = !state.onionEnabled;
-    redraw({ timelineToo: false });
-  });
+ const opacityEl = document.getElementById('onion-opacity');
+  if (opacityEl) {
+    opacityEl.addEventListener('input', e => {
+      state.onionOpacity = e.target.value / 100;
+      // image.html has the slider but no readout, so guard it — the outer
+      // check only proves the slider exists.
+      const readout = document.getElementById('onion-readout');
+      if (readout) readout.textContent = `${e.target.value}%`;
+      redraw({ timelineToo: false });
+    });
+  }
 
-  slider.addEventListener('input', e => {
-    state.onionOpacity = Number(e.target.value) / 100;
-    redraw({ timelineToo: false });
-  });
-
-  document.querySelectorAll('.depth').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.onionDepth = Math.min(Number(btn.dataset.depth), ONION_MAX_DEPTH);
+  document.querySelectorAll('.depth').forEach(b => {
+    b.addEventListener('click', () => {
+      state.onionDepth = Number(b.dataset.depth);
       redraw({ timelineToo: false });
     });
   });
 }
 
-/** Keep the toggle, slider and hint honest about what is actually showing. */
 function updateOnionUI() {
   const toggle = document.getElementById('btn-onion');
-  const slider = document.getElementById('onion-opacity');
-  const readout = document.getElementById('onion-readout');
+  if (toggle) toggle.classList.toggle('is-on', state.onionEnabled);
   const hint = document.getElementById('onion-hint');
+  if (hint) hint.textContent = describeOnion(state.frames, state.activeFrame, state.onionEnabled);
 
-  const available = hasPreviousFrame(state.activeFrame);
+  const opacityEl = document.getElementById('onion-opacity');
+  if (opacityEl) opacityEl.value = Math.round(state.onionOpacity * 100);
+  const readoutEl = document.getElementById('onion-readout');
+  if (readoutEl) readoutEl.textContent = `${Math.round(state.onionOpacity * 100)}%`;
 
-  toggle.classList.toggle('is-on', state.onionEnabled && available);
-  slider.value = Math.round(state.onionOpacity * 100);
-  slider.disabled = !state.onionEnabled;
-  readout.textContent = `${Math.round(state.onionOpacity * 100)}%`;
-
-  // Say why nothing is showing rather than leaving the artist guessing.
- // Say what is showing, or why nothing is, rather than leaving the artist
-  // guessing at a toggle that appears to do nothing.
-  hint.textContent = describeOnion(
-    state.activeFrame, state.onionDepth, state.onionEnabled
-  );
-
-  // Depth beyond the number of earlier frames is meaningless — on frame 2
-  // there is only one frame behind you, however high the setting goes.
-  document.querySelectorAll('.depth').forEach(btn => {
-    const d = Number(btn.dataset.depth);
-    btn.classList.toggle('is-active', d === state.onionDepth);
-    btn.disabled = !state.onionEnabled || d > state.activeFrame;
+  document.querySelectorAll('.depth').forEach(b => {
+    b.classList.toggle('is-active', Number(b.dataset.depth) === state.onionDepth);
   });
 }
 
+/* ─────────────── reference panel ─────────────── */
 
-/* ─────────────── reference ─────────────── */
-
-/**
- * Paint the side panel.
- *
- * A separate Renderer instance on its own canvas — the reference is never
- * drawn through the main renderer, so there is no path by which a reference
- * cell could end up in the artwork.
- */
-
-
-
-/**
- * Rebuild the reference at a new canvas resolution.
- *
- * Two paths, and the difference matters:
- *
- *   with a source image — re-run the full pipeline against the original
- *     photo. Every cell is re-averaged from full-resolution pixels, so a
- *     16x16 reference promoted to 64x64 gains real detail.
- *
- *   without one — nearest-neighbour rescale of the existing grid. Can only
- *     duplicate or drop cells that are already there, so 16 to 64 gives 4x4
- *     blocks. Honest fallback, never the preferred path.
- *
- * Either way the reference ends up matching the canvas, so the underlay
- * lines up and Milestone 7 can compare cell against cell.
- */
-function retargetReference(size) {
-  const ref = state.reference;
-  if (!ref?.grid) return;
-  if (ref.grid.length === size) return;
-
-  if (ref.image) {
-    const next = imageToGrid(ref.image, size, ref.options ?? {});
-    ref.grid = next.grid;
-    ref.palette = next.palette;
-  } else {
-    ref.grid = resampleGrid(ref.grid, size);
+function bindReference() {
+  const toggle = document.getElementById('btn-ref-panel');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      state.refPanelOpen = !state.refPanelOpen;
+      renderReferencePanel();
+      updateReferenceUI();
+    });
   }
+
+  const under = document.getElementById('btn-ref-underlay');
+  if (under) {
+    under.addEventListener('click', () => {
+      state.refUnderlay = !state.refUnderlay;
+      updateReferenceUI();
+      redraw({ timelineToo: false });
+    });
+  }
+
+  const opacity = document.getElementById('ref-underlay-opacity');
+  if (opacity) {
+    opacity.addEventListener('input', e => {
+      state.refOpacity = e.target.value / 100;
+      updateReferenceUI();
+      redraw({ timelineToo: false });
+    });
+  }
+
+  const zoomIn = document.getElementById('ref-zoom-in');
+  if (zoomIn) {
+    zoomIn.addEventListener('click', () => {
+      state.refZoom = Math.min(4, state.refZoom + 0.5);
+      renderReferencePanel();
+    });
+  }
+
+  const zoomOut = document.getElementById('ref-zoom-out');
+  if (zoomOut) {
+    zoomOut.addEventListener('click', () => {
+      state.refZoom = Math.max(0.5, state.refZoom - 0.5);
+      renderReferencePanel();
+    });
+  }
+
+  const gridlines = document.getElementById('btn-ref-gridlines');
+  if (gridlines) {
+    gridlines.addEventListener('click', e => {
+      state.refShowGrid = !state.refShowGrid;
+      e.currentTarget.classList.toggle('is-on', state.refShowGrid);
+      renderReferencePanel();
+    });
+  }
+
+  const newImg = document.getElementById('btn-ref-new');
+  if (newImg) newImg.addEventListener('click', () => go('reference'));
 }
 
 function renderReferencePanel() {
   const panel = document.getElementById('refpanel');
-  const has = Boolean(state.reference?.grid);
+  if (!panel) return;
 
-  panel.hidden = !has || !state.refPanelOpen;
-  if (!has) return;
+  const show = state.refPanelOpen && Boolean(state.reference?.grid);
+  panel.hidden = !show;
+  if (!show) return;
+
+  const readout = document.getElementById('ref-zoom-readout');
+  if (readout) readout.textContent = `${state.refZoom}x`;
 
   const canvas = document.getElementById('ref-canvas');
   if (!refRenderer || refRenderer.canvas !== canvas) {
@@ -300,8 +453,6 @@ function renderReferencePanel() {
   }
   refRenderer.draw(state.reference.grid, { showGridLines: state.refShowGrid });
 
-  // Zoom is CSS-only. The canvas keeps its pixel resolution and the container
-  // scrolls, so zooming never resamples or degrades the reference.
   canvas.style.width = `${240 * state.refZoom}px`;
   canvas.style.height = `${240 * state.refZoom}px`;
 }
@@ -310,133 +461,48 @@ function updateReferenceUI() {
   const has = Boolean(state.reference?.grid);
   const matches = referenceMatchesGrid(state.reference, state.gridSize);
 
-  // No reference means no reference controls. The blank-canvas path should
-  // not advertise a feature it does not have — a row of permanently disabled
-  // buttons is worse than no row at all.
-  document.getElementById('ref-controls').hidden = !has;
-  document.getElementById('btn-compare').disabled = !matches;
+  const controls = document.getElementById('ref-controls');
+  if (controls) controls.hidden = !has;
+  const btnCompare = document.getElementById('btn-compare');
+  if (btnCompare) {
+    btnCompare.disabled = !matches;
+    btnCompare.classList.toggle('is-on', matches && Boolean(state.comparison));
+    btnCompare.textContent = state.comparison ? 'Cancel comparison' : 'Compare with reference';
+  }
   if (!has) return;
 
   const toggle = document.getElementById('btn-ref-panel');
-  toggle.classList.toggle('is-on', state.refPanelOpen);
-  toggle.textContent = state.refPanelOpen ? 'Hide reference' : 'Show reference';
+  if (toggle) {
+    toggle.classList.toggle('is-on', state.refPanelOpen);
+    toggle.textContent = state.refPanelOpen ? 'Hide reference' : 'Show reference';
+  }
 
   const under = document.getElementById('btn-ref-underlay');
-  under.disabled = !matches;
-  under.classList.toggle('is-on', matches && state.refUnderlay);
+  if (under) {
+    under.disabled = !matches;
+    under.classList.toggle('is-on', matches && state.refUnderlay);
+  }
 
   const slider = document.getElementById('ref-underlay-opacity');
-  slider.disabled = !matches || !state.refUnderlay;
-  slider.value = Math.round(state.refOpacity * 100);
-  document.getElementById('ref-underlay-readout').textContent =
-    `${Math.round(state.refOpacity * 100)}%`;
+  if (slider) {
+    slider.disabled = !matches || !state.refUnderlay;
+    slider.value = Math.round(state.refOpacity * 100);
+  }
+  const readout = document.getElementById('ref-underlay-readout');
+  if (readout) readout.textContent = `${Math.round(state.refOpacity * 100)}%`;
 
   const hint = document.getElementById('ref-panel-hint');
-  hint.textContent = describeReference(state.reference, state.gridSize);
-  hint.classList.toggle('is-warn', has && !matches);
-
-  document.getElementById('ref-zoom-readout').textContent = `${state.refZoom}x`;
-}
-
-/* ─────────────── comparison ─────────────── */
-
-function runComparison() {
-  const ref = state.reference?.grid;
-  if (!ref) return;
-
-  state.comparison = compareGrids(currentGrid(), ref, {
-    tolerance: state.tolerance,
-  });
-  updateComparisonUI();
-  redraw({ timelineToo: false });
-}
-
-/** Drop the result — the markers would be stale the moment anything changes. */
-function clearComparison() {
-  if (!state.comparison) return;
-  state.comparison = null;
-  updateComparisonUI();
-}
-
-function updateComparisonUI() {
-  const panel = document.getElementById('score-panel');
-  const r = state.comparison;
-
-  panel.hidden = !r;
-  if (!r) return;
-
-  document.getElementById('score-overall').textContent = formatScore(r.overall);
-  document.getElementById('score-placement').textContent = formatScore(r.placement);
-  document.getElementById('score-color').textContent = formatScore(r.color);
-  document.getElementById('score-verdict').textContent = describeResult(r);
-
-  document.getElementById('score-missing').textContent = r.counts.missing;
-  document.getElementById('score-extra').textContent = r.counts.extra;
-  document.getElementById('score-wrong').textContent = r.counts.wrong;
-
-  const toggle = document.getElementById('btn-show-errors');
-  toggle.classList.toggle('is-on', state.showErrors);
-  toggle.textContent = state.showErrors ? 'Hide mistakes' : 'Show mistakes';
-}
-
-function bindComparison() {
-  document.getElementById('btn-compare').addEventListener('click', runComparison);
-
-  document.getElementById('btn-show-errors').addEventListener('click', () => {
-    state.showErrors = !state.showErrors;
-    updateComparisonUI();
-    redraw({ timelineToo: false });
-  });
-
-  document.getElementById('tolerance').addEventListener('input', e => {
-    state.tolerance = Number(e.target.value) / 100;
-    document.getElementById('tolerance-readout').textContent = `${e.target.value}%`;
-    if (state.comparison) runComparison();     // rescore live
-  });
-}
-
-function bindReference() {
-  document.getElementById('btn-ref-panel').addEventListener('click', () => {
-    state.refPanelOpen = !state.refPanelOpen;
-    renderReferencePanel();
-    updateReferenceUI();
-  });
-
-  document.getElementById('btn-ref-underlay').addEventListener('click', () => {
-    state.refUnderlay = !state.refUnderlay;
-    redraw({ timelineToo: false });
-  });
-
-  document.getElementById('ref-underlay-opacity').addEventListener('input', e => {
-    state.refOpacity = Number(e.target.value) / 100;
-    redraw({ timelineToo: false });
-  });
-
-  document.getElementById('ref-zoom-in').addEventListener('click', () => {
-    state.refZoom = Math.min(4, state.refZoom + 1);
-    renderReferencePanel();
-    updateReferenceUI();
-  });
-
-  document.getElementById('ref-zoom-out').addEventListener('click', () => {
-    state.refZoom = Math.max(1, state.refZoom - 1);
-    renderReferencePanel();
-    updateReferenceUI();
-  });
-
-  document.getElementById('btn-ref-gridlines').addEventListener('click', e => {
-    state.refShowGrid = !state.refShowGrid;
-    e.currentTarget.classList.toggle('is-on', state.refShowGrid);
-    renderReferencePanel();
-  });
-
-  document.getElementById('btn-ref-new').addEventListener('click', () => go('reference'));
+  if (hint) {
+    hint.textContent = describeReference(state.reference, state.gridSize);
+    hint.classList.toggle('is-warn', has && !matches);
+  }
 }
 
 /* ─────────────── palette ─────────────── */
 
 function buildPalette() {
   const wrap = document.getElementById('palette');
+  if (!wrap) return;
   wrap.innerHTML = '';
   PALETTE.forEach(hex => {
     const b = document.createElement('button');
@@ -450,6 +516,7 @@ function buildPalette() {
 
 function renderRecent() {
   const wrap = document.getElementById('recent');
+  if (!wrap) return;
   wrap.innerHTML = '';
   state.recentColors.forEach(hex => {
     const b = document.createElement('button');
@@ -463,20 +530,27 @@ function renderRecent() {
 
 function setColor(hex) {
   state.color = hex;
-  document.getElementById('active-chip').style.background = hex;
-  document.getElementById('active-hex').textContent = hex.toUpperCase();
-  document.getElementById('custom-color').value = hex;
+  const chip = document.getElementById('active-chip');
+  if (chip) chip.style.background = hex;
+  const hexEl = document.getElementById('active-hex');
+  if (hexEl) hexEl.textContent = hex.toUpperCase();
+  const custom = document.getElementById('custom-color');
+  if (custom) custom.value = hex;
 
   document.querySelectorAll('#palette .swatch').forEach(s => {
     s.classList.toggle('is-active', rgbToHex(s.style.background) === hex.toLowerCase());
   });
 }
 
-/** Browsers normalise inline background to rgb(); convert back to compare. */
 function rgbToHex(rgb) {
+  if (!rgb) return '';
+  if (rgb.startsWith('#')) return rgb.toLowerCase();
   const m = rgb.match(/\d+/g);
-  if (!m) return rgb;
-  return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+  if (!m || m.length < 3) return '';
+  const r = Number(m[0]).toString(16).padStart(2, '0');
+  const g = Number(m[1]).toString(16).padStart(2, '0');
+  const b = Number(m[2]).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}`;
 }
 
 /* ─────────────── tools ─────────────── */
@@ -494,127 +568,218 @@ function selectTool(tool) {
   });
 }
 
+function doPick(e) {
+  const paintCanvas = document.getElementById('paint-canvas');
+  const refCanvas = document.getElementById('ref-canvas');
+
+  if (paintCanvas && renderer) {
+    const rect = paintCanvas.getBoundingClientRect();
+    if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+      const { x, y } = renderer.toCell(e, state.gridSize);
+      let c = pick(currentGrid(), x, y);
+      if (!c && state.reference && state.reference.grid) {
+        const refGrid = state.reference.grid;
+        if (y >= 0 && y < refGrid.length && x >= 0 && x < refGrid.length) {
+          c = refGrid[y][x];
+        }
+      }
+      if (c) {
+        setColor(c);
+        pushRecentColor(c);
+        renderRecent();
+        return;
+      }
+    }
+  }
+
+  if (refCanvas && state.reference && state.reference.grid) {
+    const rect = refCanvas.getBoundingClientRect();
+    if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+      const refGrid = state.reference.grid;
+      const { x, y } = refRenderer
+        ? refRenderer.toCell(e, refGrid.length)
+        : renderer.toCell(e, refGrid.length);
+      if (y >= 0 && y < refGrid.length && x >= 0 && x < refGrid.length) {
+        const c = refGrid[y][x];
+        if (c) {
+          setColor(c);
+          pushRecentColor(c);
+          renderRecent();
+          return;
+        }
+      }
+    }
+  }
+}
+
 /* ─────────────── pointer ─────────────── */
 
+let picking = false;
+
 function bindPointer(canvas) {
+  window.addEventListener('pointerdown', e => {
+    if (state.tool === 'picker') {
+      picking = true;
+      doPick(e);
+    }
+  });
+
+  window.addEventListener('pointermove', e => {
+    if (state.tool === 'picker' && (picking || e.buttons > 0)) {
+      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      for (const ev of events) {
+        doPick(ev);
+      }
+    }
+  });
+
+  const stopPick = () => {
+    picking = false;
+  };
+  window.addEventListener('pointerup', stopPick);
+  window.addEventListener('pointercancel', stopPick);
+
   canvas.addEventListener('pointerdown', e => {
+    if (state.tool === 'picker') return;
+
     canvas.setPointerCapture(e.pointerId);
     const { x, y } = renderer.toCell(e, state.gridSize);
 
-    // Picker is a read, not an edit — no history step.
-    if (state.tool === 'picker') {
-      const c = pick(currentGrid(), x, y);
-      if (c) { setColor(c); pushRecentColor(c); renderRecent(); }
-      return;
-    }
-
     painting = true;
-    currentHistory().begin();
+    const history = currentHistory();
+    if (history) history.begin();
     lastCell = { x: -1, y: -1 };
-    stroke(x, y);
+    if (stroke(x, y)) scheduleFastRedraw();
   });
 
   canvas.addEventListener('pointermove', e => {
     const { x, y } = renderer.toCell(e, state.gridSize);
-    document.getElementById('stat-cell').textContent =
-      x >= 0 && y >= 0 && x < state.gridSize && y < state.gridSize ? `${x}, ${y}` : '—';
-    if (painting) stroke(x, y);
+    const statCell = document.getElementById('stat-cell');
+    if (statCell) {
+      statCell.textContent =
+        x >= 0 && y >= 0 && x < state.gridSize && y < state.gridSize ? `${x}, ${y}` : '—';
+    }
+
+    if (painting && state.tool !== 'picker') {
+      const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      let anyChanged = false;
+      for (const ev of events) {
+        const cell = renderer.toCell(ev, state.gridSize);
+        if (stroke(cell.x, cell.y)) anyChanged = true;
+      }
+      if (anyChanged) scheduleFastRedraw();
+    }
   });
 
   const end = () => {
     if (!painting) return;
     painting = false;
-    if (currentHistory().commit()) redraw();
+    lastCell = { x: -1, y: -1 };
+    const history = currentHistory();
+    if (history && history.commit()) redraw();
   };
+
   canvas.addEventListener('pointerup', end);
   canvas.addEventListener('pointercancel', end);
   canvas.addEventListener('pointerleave', () => {
-    document.getElementById('stat-cell').textContent = '—';
+    const statCell = document.getElementById('stat-cell');
+    if (statCell) statCell.textContent = '—';
   });
 }
 
-/**
- * One cell of a stroke. Skips repeats so dragging within a single cell does
- * not spam the history with no-ops.
- */
 function stroke(x, y) {
-  if (x === lastCell.x && y === lastCell.y) return;
-  lastCell = { x, y };
+  if (x === lastCell.x && y === lastCell.y) return false;
+  if (x < 0 || y < 0 || x >= state.gridSize || y >= state.gridSize) return false;
 
   const grid = currentGrid();
   const history = currentHistory();
+  if (!grid || !history) return false;
   let changed = false;
 
+  const startX = (lastCell.x >= 0) ? lastCell.x : x;
+  const startY = (lastCell.y >= 0) ? lastCell.y : y;
+  lastCell = { x, y };
+
   if (state.tool === 'pencil') {
-    changed = pencil(grid, history, x, y, state.color);
+    changed = drawLine(grid, history, startX, startY, x, y, (g, h, cx, cy) => pencil(g, h, cx, cy, state.color));
     if (changed) { pushRecentColor(state.color); renderRecent(); }
   } else if (state.tool === 'eraser') {
-    changed = eraser(grid, history, x, y);
+    changed = drawLine(grid, history, startX, startY, x, y, (g, h, cx, cy) => eraser(g, h, cx, cy));
   } else if (state.tool === 'fill') {
     changed = fill(grid, history, x, y, state.color);
-    painting = false;               // fill is a single action, not a drag
+    painting = false;
     if (changed) { pushRecentColor(state.color); renderRecent(); }
     history.commit();
     if (changed) redraw();
-    return;
+    return true;
   }
-if (changed) { clearComparison(); redrawFast(); }
+  return changed;
 }
-
 
 /* ─────────────── topbar ─────────────── */
 
 function bindTopbar() {
-  document.querySelector('[data-action="home"]').addEventListener('click', () => go('landing'));
+  const homeBtn = document.querySelector('[data-action="home"]');
+  if (homeBtn) {
+    homeBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
 
-document.getElementById('grid-size').addEventListener('change', e => {
-    const next = Number(e.target.value);
-    // Every frame resizes together — an animation cannot mix grid sizes.
-    resizeAllFrames(state.frames, next);
-    state.gridSize = next;
-    retargetReference(next);
-    renderReferencePanel();
-    redraw();
-  });
-
-  document.getElementById('btn-studio').addEventListener('click', () => go('studio'));
-  const lines = document.getElementById('btn-grid-lines');
-  lines.classList.toggle('is-on', state.showGridLines);
-  lines.addEventListener('click', () => {
-    state.showGridLines = !state.showGridLines;
-    lines.classList.toggle('is-on', state.showGridLines);
-    redraw({ timelineToo: false });
-  });
-}
-
-/* ─────────────── history & colour controls ─────────────── */
-
-function bindHistory() {
-  document.getElementById('btn-undo').addEventListener('click', doUndo);
-  document.getElementById('btn-redo').addEventListener('click', doRedo);
-
-  document.getElementById('btn-clear').addEventListener('click', () => {
-    const grid = currentGrid();
-    const history = currentHistory();
-    history.begin();
-    for (let y = 0; y < state.gridSize; y++) {
-      for (let x = 0; x < state.gridSize; x++) {
-        if (grid[y][x] !== null) {
-          history.record(x, y, grid[y][x], null);
-          grid[y][x] = null;
+  const sizeSelect = document.getElementById('grid-size');
+  if (sizeSelect) {
+    sizeSelect.addEventListener('change', e => {
+      const next = Number(e.target.value);
+      resizeAllFrames(state.frames, next);
+      state.gridSize = next;
+      if (state.reference) {
+        state.reference = updateReferenceGrid(state.reference, next);
+        const refSizeSelect = document.getElementById('ref-size');
+        if (refSizeSelect) refSizeSelect.value = String(next);
+        if (state.comparison) {
+          state.comparison = compareGrids(currentGrid(), state.reference.grid, {
+            tolerance: state.compareTolerance,
+          });
+          renderCompareResults();
         }
       }
-    }
-    history.commit();
-    redraw();
-  });
+      redraw();
+    });
+  }
+
+  const btnStudio = document.getElementById('btn-studio');
+  if (btnStudio) {
+    btnStudio.addEventListener('click', () => {
+      playForgeTransition(() => go('studio'));
+    });
+  }
+
+  const lines = document.getElementById('btn-grid-lines');
+  if (lines) {
+    lines.classList.toggle('is-on', state.showGridLines);
+    lines.addEventListener('click', () => {
+      state.showGridLines = !state.showGridLines;
+      lines.classList.toggle('is-on', state.showGridLines);
+      redraw({ timelineToo: false });
+    });
+  }
 }
 
-function doUndo() { if (currentHistory().undo(currentGrid())) redraw(); }
-function doRedo() { if (currentHistory().redo(currentGrid())) redraw(); }
+function doUndo() {
+  const history = currentHistory();
+  if (!history) return;
+  if (history.undo(currentGrid())) redraw();
+}
+
+function doRedo() {
+  const history = currentHistory();
+  if (!history) return;
+  if (history.redo(currentGrid())) redraw();
+}
 
 function bindColor() {
-  document.getElementById('custom-color').addEventListener('input', e => setColor(e.target.value));
+  const custom = document.getElementById('custom-color');
+  if (custom) custom.addEventListener('input', e => setColor(e.target.value));
 }
 
 function bindKeyboard() {
@@ -623,27 +788,63 @@ function bindKeyboard() {
     if (e.target.matches('input, select, textarea')) return;
 
     const mod = e.metaKey || e.ctrlKey;
-    if (mod && e.key.toLowerCase() === 'z') {
-      e.preventDefault();
-      e.shiftKey ? doRedo() : doUndo();
-      return;
+    if (mod) {
+      const key = e.key.toLowerCase();
+      if (key === 'z') {
+        e.preventDefault();
+        e.shiftKey ? doRedo() : doUndo();
+        return;
+      }
+      if (key === 'y') {
+        e.preventDefault();
+        doRedo();
+        return;
+      }
     }
 
-    // frame navigation
     if (e.key === ',' || e.key === 'ArrowLeft')  { selectFrame(state.activeFrame - 1); return; }
     if (e.key === '.' || e.key === 'ArrowRight') { selectFrame(state.activeFrame + 1); return; }
-
-
-    // onion skin toggle
-    if (e.key.toLowerCase() === 'o') {
-      state.onionEnabled = !state.onionEnabled;
-      redraw({ timelineToo: false });
-      return;
-    }
-
 
     const map = { b: 'pencil', e: 'eraser', g: 'fill', i: 'picker' };
     const tool = map[e.key.toLowerCase()];
     if (tool) selectTool(tool);
   });
+}
+
+
+/* ─────────────── delta journal & replay ─────────────── */
+
+/**
+ * The append-only record of every committed change.
+ *
+ * Separate from the undo stack on purpose: history.js POPS on undo, so it
+ * cannot answer "what actually happened" — only "what can I still reverse".
+ * Replay needs the former, including work the artist later undid.
+ */
+export const journal = new Journal();
+
+function bindJournal() {
+  // One assignment wires every History instance, present and future. See the
+  // note in history.js commit() for why the hook is static.
+  History.onAnyCommit = step => {
+    const frame = state.frames?.[state.activeFrame];
+    journal.push(step, frame?.id ?? 0);
+    updateReplayButton();
+  };
+
+  const btn = document.getElementById('btn-replay');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      openReplay({ journal, size: state.gridSize });
+    });
+  }
+  updateReplayButton();
+}
+
+function updateReplayButton() {
+  const btn = document.getElementById('btn-replay');
+  if (!btn) return;
+  btn.disabled = journal.isEmpty;
+  const count = document.getElementById('replay-count');
+  if (count) count.textContent = journal.length;
 }

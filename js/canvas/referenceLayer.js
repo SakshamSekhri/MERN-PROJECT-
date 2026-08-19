@@ -16,6 +16,9 @@
  * They are independent: you can use either, both, or neither.
  */
 
+import { imageToGrid } from '../image/pixelate.js';
+import { resampleGrid } from './grid.js';
+
 export const REFERENCE_DEFAULT_OPACITY = 0.35;
 
 /**
@@ -53,3 +56,33 @@ export function describeReference(reference, gridSize) {
   }
   return `${size} x ${size} reference`;
 }
+
+/**
+ * Update the reference grid to match a new size.
+ *
+ * If the original source image is available, re-pixelate from it for maximum quality.
+ * Otherwise fallback to resampleGrid.
+ */
+export function updateReferenceGrid(reference, newSize) {
+  if (!reference || !reference.grid) return reference;
+  if (reference.grid.length === newSize) return reference;
+
+  const options = { ...(reference.options || {}), gridSize: newSize };
+  let grid = reference.grid;
+  let palette = reference.palette;
+
+  if (reference.image) {
+    const res = imageToGrid(reference.image, newSize, options);
+    grid = res.grid;
+    palette = res.palette;
+  } else {
+    grid = resampleGrid(reference.grid, newSize);
+  }
+
+  return {
+    ...reference,
+    grid,
+    palette,
+    options,
+  };
+}

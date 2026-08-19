@@ -19,6 +19,39 @@ function applyCell(grid, history, x, y, color) {
   return true;
 }
 
+/**
+ * Draw a continuous line between (x0, y0) and (x1, y1) using Bresenham's algorithm.
+ * Guarantees smooth, unbroken pencil and eraser strokes even during rapid mouse movements.
+ */
+export function drawLine(grid, history, x0, y0, x1, y1, toolFn) {
+  let changed = false;
+  let dx = Math.abs(x1 - x0);
+  let dy = Math.abs(y1 - y0);
+  let sx = x0 < x1 ? 1 : -1;
+  let sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+
+  let currX = x0;
+  let currY = y0;
+
+  while (true) {
+    if (toolFn(grid, history, currX, currY)) {
+      changed = true;
+    }
+    if (currX === x1 && currY === y1) break;
+    let e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      currX += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      currY += sy;
+    }
+  }
+  return changed;
+}
+
 export function pencil(grid, history, x, y, color) {
   return applyCell(grid, history, x, y, color);
 }

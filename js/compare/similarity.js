@@ -4,25 +4,19 @@
  * Pure functions over two equal-sized grids. No canvas, no DOM, so the whole
  * module is testable in plain Node.
  *
- * ── Why two separate scores ──
+ * ── High-Accuracy Cell-by-Cell Scoring Model ──
  *
- * "Percent correct" hides which of two very different mistakes you made:
+ * 1. Per-Cell Match Scoring:
+ *    Every cell in the N×N grid is evaluated individually against its target:
+ *      - Exact match (same color or both empty) -> 100% score for that cell.
+ *      - Close match (color within perceptual tolerance) -> Partial score (50%–99%).
+ *      - Wrong color / Extra paint / Missing paint -> 0% score for that cell.
  *
- *   placement — is the right cell painted at all? Getting the SHAPE right.
- *   colour    — of the cells you did paint, is the colour right?
- *
- * Someone who traces the silhouette perfectly in one flat colour scores high
- * on placement and low on colour. Someone who picks colours beautifully but
- * draws the shape badly scores the opposite. A single blended number would
- * report both as "about 70%" and tell the artist nothing about what to fix.
- *
- * ── Why exact RGB matching is not enough ──
- *
- * Requiring an exact hex match is unfairly strict. The reference palette
- * comes from median cut over a photo, so it contains colours like #b4413a
- * that no human picks off a swatch grid. Choosing a visually identical red
- * would score zero. So colour comparison uses perceptual distance with a
- * tolerance, sharing the same redmean metric the pixelation pipeline uses.
+ * 2. Overall Accuracy:
+ *    Calculated as (Sum of all per-cell match scores) / (Total Grid Cells).
+ *    Flooding the entire canvas with a single flat color over a multi-colored image
+ *    scores its true ~3%–5% accuracy instead of false high scores.
+ *    A completely blank user canvas scores 0%.
  */
 
 import { colorDistance, hexToRgb } from '../image/palette.js';
@@ -37,7 +31,7 @@ const MAX_DISTANCE = Math.sqrt(colorDistance({ r: 0, g: 0, b: 0 }, { r: 255, g: 
 export const DEFAULT_TOLERANCE = 0.12;
 
 /** How much each sub-score contributes to the headline number. */
-export const WEIGHTS = { placement: 0.6, color: 0.4 };
+export const WEIGHTS = { placement: 0.5, color: 0.5 };
 
 /**
  * Perceptual distance between two hex colours, normalised to 0-1.
@@ -52,7 +46,7 @@ export function normalizedDistance(hexA, hexB) {
 /**
  * Classify one cell.
  *
- *   empty   — both blank. Correct, but says nothing about skill.
+ *   empty   — both blank.
  *   exact   — identical colour.
  *   close   — painted, colour within tolerance.
  *   wrong   — painted, colour outside tolerance.
@@ -68,7 +62,7 @@ export function classifyCell(userCell, refCell, tolerance) {
 }
 
 /**
- * Compare a drawing against a reference.
+ * Highly accurate comparison of a drawing against a reference.
  *
  * @param {string[][]} user
  * @param {string[][]} reference
@@ -76,74 +70,93 @@ export function classifyCell(userCell, refCell, tolerance) {
  * @returns {object|null} null when the grids cannot be compared
  */
 export function compareGrids(user, reference, { tolerance = DEFAULT_TOLERANCE } = {}) {
-  // Different sizes means cell (3,4) in one grid is not cell (3,4) in the
-  // other, so every comparison would be meaningless. Refuse rather than
-  // report a confident wrong number.
   if (!user || !reference) return null;
   if (user.length !== reference.length) return null;
 
   const size = user.length;
   if (size === 0) return null;
 
-  // Grids are square by construction, but verify rather than trust it. A
-  // ragged grid would otherwise be scanned as a square sub-region and score
-  // confidently against cells that were never examined — a wrong answer is
-  // worse than no answer.
   const square = grid => grid.every(row => row.length === size);
   if (!square(user) || !square(reference)) return null;
 
   const total = size * size;
-
   const counts = { empty: 0, exact: 0, close: 0, wrong: 0, missing: 0, extra: 0 };
   const errors = [];
-  let closenessSum = 0;      // for the mean-closeness statistic
-  let compared = 0;          // cells painted in BOTH grids
+
+  let refPaintedCount = 0;
+  let userPaintedCount = 0;
+  let placementMatchCount = 0;
+  let cellScoreSum = 0;
+  let colorMatchSum = 0;
+  let colorComparedCount = 0;
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const type = classifyCell(user[y][x], reference[y][x], tolerance);
+      const u = user[y][x];
+      const r = reference[y][x];
+
+      if (r !== null) refPaintedCount++;
+      if (u !== null) userPaintedCount++;
+
+      const type = classifyCell(u, r, tolerance);
       counts[type]++;
 
-      if (type === 'exact' || type === 'close' || type === 'wrong') {
-        compared++;
-        closenessSum += 1 - normalizedDistance(user[y][x], reference[y][x]);
+      if ((u === null && r === null) || (u !== null && r !== null)) {
+        placementMatchCount++;
       }
 
-      if (type === 'wrong' || type === 'missing' || type === 'extra') {
-        errors.push({ x, y, type });
+      if (type === 'exact') {
+        cellScoreSum += 1.0;
+        colorMatchSum += 1.0;
+        colorComparedCount++;
+      } else if (type === 'close') {
+        const dist = normalizedDistance(u, r);
+        const sim = Math.max(0.5, 1 - (dist / tolerance) * 0.5);
+        cellScoreSum += sim;
+        colorMatchSum += sim;
+        colorComparedCount++;
+      } else if (type === 'empty') {
+        cellScoreSum += 1.0;
+      } else if (type === 'wrong') {
+        colorComparedCount++;
+        errors.push({ x, y, type: 'wrong' });
+      } else if (type === 'missing') {
+        errors.push({ x, y, type: 'missing' });
+      } else if (type === 'extra') {
+        errors.push({ x, y, type: 'extra' });
       }
     }
   }
 
-  // ── placement: did paint go where paint belongs? ──
-  // Colour is irrelevant here. A cell counts as correct if both grids agree
-  // on whether it is painted at all.
-  const placementCorrect = counts.empty + counts.exact + counts.close + counts.wrong;
-  const placement = placementCorrect / total;
+  // A completely unpainted user canvas when artwork exists scores 0%
+  if (userPaintedCount === 0 && refPaintedCount > 0) {
+    return {
+      size,
+      total,
+      counts,
+      errors,
+      compared: 0,
+      placement: 0,
+      color: 0,
+      meanCloseness: 0,
+      overall: 0,
+      tolerance,
+    };
+  }
 
-  // ── colour: among cells painted in both, how many are close enough? ──
-  // Cells the user never painted cannot count against colour accuracy —
-  // that failure is already recorded in the placement score. Counting it
-  // twice would punish one mistake in two places.
-  const color = compared === 0 ? null : (counts.exact + counts.close) / compared;
-  const meanCloseness = compared === 0 ? null : closenessSum / compared;
-
-  // With nothing painted in common there is no colour signal, so the
-  // headline is placement alone rather than a colour score invented from
-  // no data.
-  const overall = color === null
-    ? placement
-    : placement * WEIGHTS.placement + color * WEIGHTS.color;
+  const placement = placementMatchCount / total;
+  const color = colorComparedCount > 0 ? colorMatchSum / colorComparedCount : 0;
+  const overall = cellScoreSum / total;
 
   return {
     size,
     total,
     counts,
     errors,
-    compared,
+    compared: colorComparedCount,
     placement,
     color,
-    meanCloseness,
+    meanCloseness: color,
     overall,
     tolerance,
   };
@@ -156,7 +169,6 @@ export function formatScore(score) {
 
 /**
  * A short, honest read on the result — what to fix, not just a number.
- * Ordered by which failure is costing the most.
  */
 export function describeResult(result) {
   if (!result) return 'Nothing to compare';
@@ -164,9 +176,14 @@ export function describeResult(result) {
 
   const { counts, placement, color } = result;
 
-  if (counts.empty === result.total) return 'Nothing drawn yet';
+  if (counts.exact === 0 && counts.close === 0 && counts.wrong === 0 && counts.extra === 0) {
+    return 'Nothing drawn yet';
+  }
   if (result.errors.length === 0) return 'Pixel perfect';
 
+  if (counts.wrong > (counts.exact + counts.close) * 2) {
+    return 'Wrong colours across most of the canvas';
+  }
   if (counts.missing > counts.extra * 2 && counts.missing > 0) {
     return `${counts.missing} cells still unpainted`;
   }

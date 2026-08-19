@@ -107,11 +107,31 @@
   flex-wrap: wrap;
   gap: 3px;
   min-height: 20px;
+  max-height: 115px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--void);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius);
+}
+.ref-swatches::-webkit-scrollbar {
+  width: 6px;
+}
+.ref-swatches::-webkit-scrollbar-track {
+  background: var(--panel);
+}
+.ref-swatches::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+.ref-swatches::-webkit-scrollbar-thumb:hover {
+  background: var(--cyan);
 }
 .ref-chip {
   width: 18px;
   height: 18px;
   box-shadow: inset 0 0 0 1px #0006;
+  flex-shrink: 0;
 }
 
 /* ── stats + actions ── */

@@ -23,11 +23,11 @@ const ERROR_WRONG   = '#fbbf24';   // gold   — right place, wrong colour
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.ctx.imageSmoothingEnabled = false;
+    this.ctx = canvas ? canvas.getContext('2d') : null;
+    if (this.ctx) this.ctx.imageSmoothingEnabled = false;
   }
 
-  get size() { return this.canvas.width; }
+  get size() { return this.canvas ? this.canvas.width : 0; }
 
   cellSize(gridSize) { return this.size / gridSize; }
 
@@ -37,6 +37,7 @@ export class Renderer {
    * resolution, so we scale by the bounding rect rather than assuming 1:1.
    */
   toCell(evt, gridSize) {
+    if (!this.canvas) return { x: 0, y: 0 };
     const rect = this.canvas.getBoundingClientRect();
     const cs = rect.width / gridSize;
     return {
@@ -55,6 +56,7 @@ export class Renderer {
    * `onion` is an array of { grid, opacity } ordered farthest-first.
    */
   draw(grid, { showGridLines = true, onion = null, reference = null, errors = null } = {}) {
+    if (!this.canvas || !this.ctx || !grid) return;
     const gridSize = grid.length;
     const cs = this.cellSize(gridSize);
     const ctx = this.ctx;
@@ -181,7 +183,9 @@ export class Renderer {
  * Renderer for each one.
  */
 export function drawThumbnail(canvas, grid) {
+  if (!canvas || !grid) return;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return;
   const gridSize = grid.length;
   const cs = canvas.width / gridSize;
 

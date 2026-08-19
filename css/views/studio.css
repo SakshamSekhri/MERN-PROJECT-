@@ -150,3 +150,48 @@
   #studio-canvas { width: min(80vw, 340px); height: min(80vw, 340px); }
   .studio-strip__head { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── studio toolbar ── */
+.studio-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 760px;
+  border: var(--border) solid var(--line);
+  background: var(--panel);
+  padding: var(--s3);
+}
+
+.studio-toolbar .toolset {
+  display: flex;
+  flex-direction: row;
+  gap: var(--s1);
+}
+
+.studio-colors {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+
+.studio-colors .palette {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 0;
+}
+
+.studio-colors .swatch {
+  width: 20px;
+  height: 20px;
+  aspect-ratio: 1;
+}
+
+.studio-history-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
