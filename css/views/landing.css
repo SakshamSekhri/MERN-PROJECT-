@@ -2,6 +2,8 @@
    View: Landing
    ═══════════════════════════════════════════════ */
 
+@import '../../style.css';
+
 .view--landing {
   position: relative;
   align-items: center;

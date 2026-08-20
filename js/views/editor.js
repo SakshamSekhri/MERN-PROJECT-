@@ -365,7 +365,7 @@ function updateOnionUI() {
   const toggle = document.getElementById('btn-onion');
   if (toggle) toggle.classList.toggle('is-on', state.onionEnabled);
   const hint = document.getElementById('onion-hint');
-  if (hint) hint.textContent = describeOnion(state.frames, state.activeFrame, state.onionEnabled);
+  if (hint) hint.textContent = describeOnion(state.activeFrame, state.onionDepth, state.onionEnabled);
 
   const opacityEl = document.getElementById('onion-opacity');
   if (opacityEl) opacityEl.value = Math.round(state.onionOpacity * 100);

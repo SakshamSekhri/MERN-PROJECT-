@@ -1,57 +1,689 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PixelVerse — Home</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PixelVerse — a pixel-art creation platform.">
+  <title>PixelVerse</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS v4 browser runtime.
+       This replaces Kombai's localhost-only /api/tailwind/browser.js endpoint. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
-<link rel="stylesheet" href="css/base.css" />
-<link rel="stylesheet" href="css/components.css" />
-<link rel="stylesheet" href="css/views/landing.css" />
+  <!-- Fonts and icons used by the recovered design -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fira+Sans:wght@400;500;600&family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css">
+
+  <!-- Locomotive Scroll -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@5/bundled/locomotive-scroll.css">
+
+  <!-- Recovered custom CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<!-- ═══════════════ VIEW: LANDING ═══════════════ -->
-<section class="view view--landing is-active" id="view-landing">
-  <div class="scanlines" aria-hidden="true"></div>
-
-  <header class="landing__head">
-    <h1 class="logo">PIXEL<span class="logo__accent">VERSE</span></h1>
-    <p class="landing__tag">Draw it cell by cell. Watch it come back to life.</p>
-  </header>
-
-  <div class="landing__stage">
-    <canvas id="hero-canvas" width="256" height="256" aria-label="A sprite drawing itself one cell at a time"></canvas>
-    <p class="landing__stage-label" id="hero-label">replaying · <span id="hero-count">0</span> cells</p>
+  <div id="root">
+    <div class="w-full overflow-x-clip" data-kid="1" data-name="main page container" id="pv">
+    <!-- 1. HUD BAR -->
+    <header class="sticky top-0 z-50 border-b-2 border-[var(--pv-ink)] bg-[var(--pv-stone-dk)]/95 backdrop-blur-0" data-kid="1-1" data-name="main header navigation bar">
+        <div class="mx-auto flex max-w-[1360px] items-center gap-6 px-6 py-2.5" data-kid="1-1-1" data-name="navigation content wrapper">
+            <div class="flex items-center gap-3" data-kid="1-1-1-1" data-name="logo and brand container">
+                <span class="block" data-dynamic="true" data-kid="1-1-1-1-1" data-name="logo sprite" data-reason="rendered by script at load" id="logoSprite">
+                </span>
+                <span class="pv-hud text-[13px] tracking-[0.14em] text-[var(--pv-text)]" data-kid="1-1-1-1-2" data-name="brand name text">
+                    PIXELVERSE
+                </span>
+            </div>
+            <span class="hidden h-6 w-0.5 bg-[var(--pv-ink)] md:block" data-kid="1-1-1-2" data-name="vertical separator line">
+            </span>
+            <nav class="hidden items-center gap-1 md:flex" data-kid="1-1-1-3" data-name="navigation menu links">
+                <a class="pv-hud px-3 py-2 text-[9px] tracking-widest text-[var(--pv-muted)] hover:bg-[var(--pv-stone)] hover:text-[var(--pv-sun-lit)]" data-kid="1-1-1-3-1" data-name="navigation menu link create" href="#features">
+                    CREATE
+                </a>
+                <a class="pv-hud px-3 py-2 text-[9px] tracking-widest text-[var(--pv-muted)] hover:bg-[var(--pv-stone)] hover:text-[var(--pv-sun-lit)]" data-kid="1-1-1-3-2" data-name="navigation menu link showcase" href="#showcase">
+                    SHOWCASE
+                </a>
+                <a class="pv-hud px-3 py-2 text-[9px] tracking-widest text-[var(--pv-muted)] hover:bg-[var(--pv-stone)] hover:text-[var(--pv-sun-lit)]" data-kid="1-1-1-3-3" data-name="navigation menu link community" href="#community">
+                    COMMUNITY
+                </a>
+                <a class="pv-hud px-3 py-2 text-[9px] tracking-widest text-[var(--pv-muted)] hover:bg-[var(--pv-stone)] hover:text-[var(--pv-magenta-lit)]" data-kid="1-1-1-3-4" data-name="navigation menu link studio" href="#studio">
+                    STUDIO
+                </a>
+            </nav>
+            <div class="ml-auto flex items-center gap-4" data-kid="1-1-1-4" data-name="header utilities container">
+                <div class="hidden items-center gap-2 border-2 border-[var(--pv-ink)] bg-[var(--pv-sky)] px-2.5 py-1.5 lg:flex" data-kid="1-1-1-4-1" data-name="health points display widget">
+                    <span class="h-2 w-2 bg-[var(--pv-moss)] blink" data-kid="1-1-1-4-1-1" data-name="health indicator blinking dot">
+                    </span>
+                    <span class="pv-hud text-[8px] text-[var(--pv-muted)]" data-kid="1-1-1-4-1-2" data-name="health points text">
+                        HP 20/20
+                    </span>
+                </div>
+                <a class="btn pv-hud bg-[var(--pv-sun)] px-4 py-2.5 text-[9px] tracking-widest text-[var(--pv-ink)]" data-kid="1-1-1-4-2" data-name="call-to-action button" href="blank.html">
+                    START CREATING
+                </a>
+            </div>
+        </div>
+    </header>
+    <!-- 2. HERO -->
+    <section class="relative h-[92vh] min-h-[680px] w-full overflow-hidden border-b-2 border-[var(--pv-ink)]" data-kid="1-2" data-name="hero section">
+        <!-- far sky -->
+        <div class="absolute inset-0" data-kid="1-2-1" data-name="far sky background layer" data-scroll="" data-scroll-speed="-1.4" style="background:linear-gradient(180deg,#0c1020 0%,var(--pv-sky) 42%,var(--pv-sky-2) 74%,#2b2f42 100%)">
+        </div>
+        <div class="absolute inset-0" data-dynamic="true" data-kid="1-2-2" data-name="stars background container" data-reason="stars list injected by script at load" data-scroll="" data-scroll-speed="-1.2" id="stars">
+        </div>
+        <!-- low sun disc -->
+        <div class="absolute bottom-[52%] left-[64%] w-[150px]" data-kid="1-2-3" data-name="sun disc icon" data-scroll="" data-scroll-speed="-1.1">
+            <svg class="pix w-full opacity-90" data-kid="1-2-3-1" data-name="sun disc svg" viewbox="0 0 16 16">
+                <g fill="#f7b45e">
+                    <rect height="1" width="6" x="5" y="0">
+                    </rect>
+                    <rect height="2" width="10" x="3" y="1">
+                    </rect>
+                    <rect height="4" width="12" x="2" y="3">
+                    </rect>
+                    <rect height="4" width="14" x="1" y="7">
+                    </rect>
+                    <rect height="3" width="12" x="2" y="11">
+                    </rect>
+                    <rect height="2" width="8" x="4" y="14">
+                    </rect>
+                </g>
+                <g fill="#e88d30" opacity=".55">
+                    <rect height="1" width="14" x="1" y="9">
+                    </rect>
+                    <rect height="1" width="12" x="2" y="12">
+                    </rect>
+                </g>
+            </svg>
+        </div>
+        <!-- clouds -->
+        <div class="absolute inset-x-0 top-[12%] h-40" data-dynamic="true" data-kid="1-2-4" data-name="clouds background container" data-reason="clouds injected and animated by script" data-scroll="" data-scroll-speed="-0.9" id="clouds">
+        </div>
+        <!-- distant ridge -->
+        <div class="absolute inset-x-0 bottom-[22%]" data-kid="1-2-5" data-name="distant ridge background" data-scroll="" data-scroll-speed="-0.8">
+            <svg class="pix h-[260px] w-full" data-kid="1-2-5-1" data-name="distant ridge mountain path" preserveaspectratio="none" viewbox="0 0 320 60">
+                <path d="M0 60V38l16-8 12 8 18-16 14 10 20-18 22 20 16-8 18 12 20-22 18 18 16-10 22 16 14-8 20 12 14-6 16 10v22z" fill="#232b40">
+                </path>
+            </svg>
+        </div>
+        <!-- mid ridge -->
+        <div class="absolute inset-x-0 bottom-[16%]" data-kid="1-2-6" data-name="mid ridge background" data-scroll="" data-scroll-speed="-0.55">
+            <svg class="pix h-[250px] w-full" data-kid="1-2-6-1" data-name="mid ridge mountain path" preserveaspectratio="none" viewbox="0 0 320 60">
+                <path d="M0 60V44l22-14 18 12 26-22 20 16 24-24 26 22 18-10 24 18 22-20 24 20-12 22 16 14-8 20 12v34z" fill="var(--pv-stone)">
+                </path>
+                <path d="M0 60V52l30-10 26 10 30-8 28 10 34-10 30 12 30-10 28 10 30-8 24 8v4z" fill="#31454e">
+                </path>
+            </svg>
+        </div>
+        <!-- treeline -->
+        <div class="absolute inset-x-0 bottom-[12.5%]" data-dynamic="true" data-kid="1-2-7" data-name="treeline background container" data-reason="trees injected by script at load" data-scroll="" data-scroll-speed="-0.28" id="treeline">
+        </div>
+        <!-- foreground ledge -->
+        <div class="absolute inset-x-0 bottom-0 h-[15%] min-h-[110px]" data-kid="1-2-8" data-name="foreground ledge container" data-scroll="" data-scroll-speed="-0.06">
+            <div class="relative h-full" data-kid="1-2-8-1" data-name="ledge visual composition">
+                <div class="absolute inset-x-0 -top-[26px] h-[26px]" data-kid="1-2-8-1-1" data-name="ledge mossy pattern" style="background:repeating-linear-gradient(90deg,var(--pv-moss) 0 16px,#3f5d3c 16px 32px)">
+                </div>
+                <div class="absolute inset-x-0 -top-[30px] h-1 bg-[#5c8154]" data-kid="1-2-8-1-2" data-name="ledge edge highlight">
+                </div>
+                <div class="dirt h-full w-full border-t-2 border-[var(--pv-ink)]" data-kid="1-2-8-1-3" data-name="ledge soil pattern">
+                </div>
+            </div>
+        </div>
+        <!-- character + lantern on ledge -->
+        <div class="absolute bottom-[15%] left-[58%] z-20 flex items-end gap-10" data-kid="1-2-9" data-name="character and lantern container">
+            <span class="bob block" data-dynamic="true" data-kid="1-2-9-1" data-name="hero character sprite" data-reason="rendered by script at load" id="heroChar">
+            </span>
+            <span class="flick block" data-dynamic="true" data-kid="1-2-9-2" data-name="lantern sprite" data-reason="rendered by script at load" id="heroLantern">
+            </span>
+        </div>
+        <div class="pointer-events-none absolute inset-x-0 bottom-[14%] h-72 z-10" data-dynamic="true" data-kid="1-2-10" data-name="mote particles container" data-reason="motes injected and animated by script" id="motes">
+        </div>
+        <!-- hero copy -->
+        <div class="relative z-30 mx-auto flex h-full max-w-[1360px] items-center px-6" data-kid="1-2-11" data-name="hero copy layout container">
+            <div class="max-w-[720px]" data-kid="1-2-11-1" data-name="hero text content">
+                <div class="mb-6 inline-flex items-center gap-2 border-2 border-[var(--pv-ink)] bg-[var(--pv-stone-dk)] px-3 py-2 shadow-[4px_4px_0_var(--pv-ink)]" data-kid="1-2-11-1-1" data-name="hero badge container">
+                    <span class="h-2 w-2 bg-[var(--pv-sun)]" data-kid="1-2-11-1-1-1" data-name="hero badge indicator">
+                    </span>
+                    <span class="pv-hud text-[9px] tracking-[0.2em] text-[var(--pv-sun-lit)]" data-kid="1-2-11-1-1-2" data-name="hero badge label">
+                        PIXELVERSE
+                    </span>
+                    <span class="pv-hud text-[9px] tracking-[0.15em] text-[var(--pv-muted)]" data-kid="1-2-11-1-1-3" data-name="hero badge meta text">
+                        / WORLD 01
+                    </span>
+                </div>
+                <h1 class="pv-h text-[68px] font-bold leading-[0.95] tracking-tight text-[var(--pv-text)] md:text-[84px]" data-kid="1-2-11-1-2" data-name="hero headline text" id="heroH1" style="text-shadow:6px 6px 0 #0d1017">
+                    Turn Every
+                    <br data-kid="1-2-11-1-2-1" data-name="headline line break"/>
+                    Pixel Into Art.
+                </h1>
+                <p class="mt-7 max-w-[520px] text-[19px] leading-relaxed text-[var(--pv-muted)]" data-kid="1-2-11-1-3" data-name="hero subheadline text">
+                    Draw. Create. Animate. Share. Your pixel universe starts here.
+                </p>
+                <div class="mt-10 flex flex-wrap items-center gap-6" data-kid="1-2-11-1-4" data-name="hero buttons container">
+                    <a class="btn pv-hud bg-[var(--pv-sun)] px-7 py-4 text-[11px] tracking-widest text-[var(--pv-ink)]" data-kid="1-2-11-1-4-1" data-name="hero start creating button" href="blank.html">
+                        START CREATING
+                    </a>
+                    <a class="btn pv-hud bg-[var(--pv-sky)]/60 px-7 py-4 text-[11px] tracking-widest text-[var(--pv-text)] hover:bg-[var(--pv-stone)]" data-kid="1-2-11-1-4-2" data-name="hero explore art button" href="#showcase">
+                        EXPLORE ART
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 3. FEATURES -->
+    <section class="relative bg-[var(--pv-sky-2)] py-24" data-kid="1-3" data-name="features section" id="features">
+        <div class="mx-auto max-w-[1360px] px-6" data-kid="1-3-1" data-name="features header container">
+            <div class="mb-4 flex items-center gap-3" data-kid="1-3-1-1" data-name="features title badge">
+                <span class="h-3 w-3 bg-[var(--pv-sun)]" data-kid="1-3-1-1-1" data-name="features badge indicator">
+                </span>
+                <span class="pv-hud text-[10px] tracking-[0.2em] text-[var(--pv-sun-lit)]" data-kid="1-3-1-1-2" data-name="features title label">
+                    SKILL TREE
+                </span>
+            </div>
+            <h2 class="pv-h max-w-[640px] text-[46px] font-bold leading-[1.02] text-[var(--pv-text)]" data-kid="1-3-1-2" data-name="features section heading">
+                Three tools. One pixel workshop.
+            </h2>
+        </div>
+        <div class="relative mx-auto mt-16 max-w-[1160px] px-6" data-kid="1-3-2" data-name="features grid container">
+            <!-- vine spine -->
+            <div class="absolute left-1/2 top-0 hidden h-full w-3 -translate-x-1/2 vine md:block" data-kid="1-3-2-1" data-name="vine decoration spine">
+            </div>
+            <!-- rung 1 -->
+            <div class="relative grid gap-8 md:grid-cols-2 md:gap-16" data-kid="1-3-2-2" data-name="rung 1 grid">
+                <div class="rung" data-kid="1-3-2-2-1" data-name="rung 1 left card" data-side="left">
+                    <div class="stk bg-[var(--pv-stone)] p-7" data-kid="1-3-2-2-1-1" data-name="card content">
+                        <div class="flex items-start justify-between gap-4" data-kid="1-3-2-2-1-1-1" data-name="card header">
+                            <div data-kid="1-3-2-2-1-1-1-1" data-name="card label text">
+                                <span class="pv-hud text-[9px] tracking-widest text-[var(--pv-sun-lit)]" data-kid="1-3-2-2-1-1-1-1-1" data-name="card category label">
+                                    01 / TOOL
+                                </span>
+                                <h3 class="pv-h mt-3 text-[34px] font-bold leading-none" data-kid="1-3-2-2-1-1-1-1-2" data-name="card title">
+                                    CREATE
+                                </h3>
+                            </div>
+                            <span data-dynamic="true" data-kid="1-3-2-2-1-1-1-2" data-name="card coin icon" data-reason="rendered by script at load" id="sprCoin">
+                            </span>
+                        </div>
+                        <p class="mt-4 max-w-[360px] text-[16px] leading-relaxed text-[#c3ccd6]" data-kid="1-3-2-2-1-1-2" data-name="card description text">
+                            Create pixel art from a blank canvas using your own creativity.
+                        </p>
+                        <div class="mt-6 flex items-stretch gap-4 border-2 border-[var(--pv-ink)] bg-[var(--pv-sky)] p-3" data-kid="1-3-2-2-1-1-3" data-name="card interaction preview container">
+                            <div class="flex w-9 flex-col gap-1.5 text-[15px] text-[var(--pv-muted)]" data-kid="1-3-2-2-1-1-3-1" data-name="tool icon column">
+                                <span class="grid h-8 place-items-center bg-[var(--pv-sun)] text-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-1-1" data-name="pencil tool icon">
+                                    <i class="ti ti-pencil" data-kid="1-3-2-2-1-1-3-1-1-1" data-name="pencil icon graphic">
+                                    </i>
+                                </span>
+                                <span class="grid h-8 place-items-center bg-[var(--pv-stone-dk)]" data-kid="1-3-2-2-1-1-3-1-2" data-name="eraser tool icon">
+                                    <i class="ti ti-eraser" data-kid="1-3-2-2-1-1-3-1-2-1" data-name="eraser icon graphic">
+                                    </i>
+                                </span>
+                                <span class="grid h-8 place-items-center bg-[var(--pv-stone-dk)]" data-kid="1-3-2-2-1-1-3-1-3" data-name="picker tool icon">
+                                    <i class="ti ti-color-picker" data-kid="1-3-2-2-1-1-3-1-3-1" data-name="picker icon graphic">
+                                    </i>
+                                </span>
+                                <span class="grid h-8 place-items-center bg-[var(--pv-stone-dk)]" data-kid="1-3-2-2-1-1-3-1-4" data-name="bucket tool icon">
+                                    <i class="ti ti-bucket-droplet" data-kid="1-3-2-2-1-1-3-1-4-1" data-name="bucket icon graphic">
+                                    </i>
+                                </span>
+                            </div>
+                            <div class="border-2 border-[var(--pv-ink)]" data-dynamic="true" data-kid="1-3-2-2-1-1-3-2" data-name="mini canvas area" data-reason="content rendered and styled by script" id="miniCanvas">
+                            </div>
+                            <div class="grid grid-cols-2 content-start gap-1.5" data-kid="1-3-2-2-1-1-3-3" data-name="palette color grid">
+                                <span class="h-5 w-5 border border-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-3-1" data-name="color swatch 1" style="background:#e88d30">
+                                </span>
+                                <span class="h-5 w-5 border border-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-3-2" data-name="color swatch 2" style="background:#f7b45e">
+                                </span>
+                                <span class="h-5 w-5 border border-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-3-3" data-name="color swatch 3" style="background:#4a6b46">
+                                </span>
+                                <span class="h-5 w-5 border border-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-3-4" data-name="color swatch 4" style="background:#283a42">
+                                </span>
+                                <span class="h-5 w-5 border border-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-3-5" data-name="color swatch 5" style="background:#d92bb4">
+                                </span>
+                                <span class="h-5 w-5 border border-[var(--pv-ink)]" data-kid="1-3-2-2-1-1-3-3-6" data-name="color swatch 6" style="background:#eef1f5">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a href="blank.html" class="btn pv-hud inline-block bg-[var(--pv-sun)] px-4 py-2 text-[9px] tracking-widest text-[var(--pv-ink)]">
+                                OPEN BLANK CANVAS →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block" data-kid="1-3-2-2-2" data-name="rung 1 right card placeholder">
+                </div>
+                <span class="absolute left-1/2 top-16 hidden h-6 w-6 -translate-x-1/2 border-2 border-[var(--pv-ink)] bg-[var(--pv-sun)] md:block" data-kid="1-3-2-2-3" data-name="rung 1 indicator">
+                </span>
+            </div>
+            <!-- rung 2 -->
+            <div class="relative mt-20 grid gap-8 md:grid-cols-2 md:gap-16" data-kid="1-3-2-3" data-name="rung 2 grid">
+                <div class="hidden md:block" data-kid="1-3-2-3-1" data-name="rung 2 left card placeholder">
+                </div>
+                <div class="rung" data-kid="1-3-2-3-2" data-name="rung 2 right card" data-side="right">
+                    <div class="stk bg-[var(--pv-stone)] p-7" data-kid="1-3-2-3-2-1" data-name="rung 2 card content">
+                        <span class="pv-hud text-[9px] tracking-widest text-[var(--pv-sun-lit)]" data-kid="1-3-2-3-2-1-1" data-name="rung 2 category label">
+                            02 / TOOL
+                        </span>
+                        <h3 class="pv-h mt-3 text-[34px] font-bold leading-none" data-kid="1-3-2-3-2-1-2" data-name="rung 2 title">
+                            REFERENCE
+                        </h3>
+                        <p class="mt-4 max-w-[380px] text-[16px] leading-relaxed text-[#c3ccd6]" data-kid="1-3-2-3-2-1-3" data-name="rung 2 description text">
+                            Upload an image and transform it into a pixel-art reference that helps you recreate the artwork.
+                        </p>
+                        <div class="relative mt-6 select-none border-2 border-[var(--pv-ink)] bg-[var(--pv-sky)]" data-kid="1-3-2-3-2-1-4" data-name="rung 2 reference preview area">
+                            <div class="absolute inset-0" data-dynamic="true" data-kid="1-3-2-3-2-1-4-1" data-name="preview fine layer" data-reason="content rendered by script" id="refFine">
+                            </div>
+                            <div class="absolute inset-0" data-dynamic="true" data-kid="1-3-2-3-2-1-4-2" data-name="preview coarse layer" data-reason="content rendered by script" id="refCoarse" style="clip-path:inset(0 0 0 50%)">
+                            </div>
+                            <div class="relative h-[168px]" data-kid="1-3-2-3-2-1-4-3" data-name="spacer div">
+                            </div>
+                            <div class="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-[var(--pv-ink)]" data-kid="1-3-2-3-2-1-4-4" data-name="preview slider divider">
+                            </div>
+                            <div class="absolute left-1/2 top-1/2 flex h-12 w-7 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-1 border-2 border-[var(--pv-ink)] bg-[var(--pv-sun)]" data-kid="1-3-2-3-2-1-4-5" data-name="slider handle">
+                                <span class="h-0.5 w-3 bg-[var(--pv-ink)]" data-kid="1-3-2-3-2-1-4-5-1" data-name="slider handle tick 1">
+                                </span>
+                                <span class="h-0.5 w-3 bg-[var(--pv-ink)]" data-kid="1-3-2-3-2-1-4-5-2" data-name="slider handle tick 2">
+                                </span>
+                                <span class="h-0.5 w-3 bg-[var(--pv-ink)]" data-kid="1-3-2-3-2-1-4-5-3" data-name="slider handle tick 3">
+                                </span>
+                            </div>
+                            <span class="pv-hud absolute left-2 top-2 bg-[var(--pv-ink)] px-1.5 py-1 text-[8px] text-[var(--pv-muted)]" data-kid="1-3-2-3-2-1-4-6" data-name="source label">
+                                SOURCE
+                            </span>
+                            <span class="pv-hud absolute right-2 top-2 bg-[var(--pv-ink)] px-1.5 py-1 text-[8px] text-[var(--pv-sun-lit)]" data-kid="1-3-2-3-2-1-4-7" data-name="pixelized label">
+                                PIXELIZED
+                            </span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="image.html" class="btn pv-hud inline-block bg-[var(--pv-sun)] px-4 py-2 text-[9px] tracking-widest text-[var(--pv-ink)]">
+                                CREATE FROM IMAGE →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <span class="absolute left-1/2 top-16 hidden h-6 w-6 -translate-x-1/2 border-2 border-[var(--pv-ink)] bg-[var(--pv-sun)] md:block" data-kid="1-3-2-3-3" data-name="rung 2 indicator">
+                </span>
+            </div>
+            <!-- rung 3 PRO -->
+            <div class="relative mt-20 grid gap-8 md:grid-cols-2 md:gap-16" data-kid="1-3-2-4" data-name="rung 3 grid">
+                <div class="rung" data-kid="1-3-2-4-1" data-name="rung 3 left card" data-side="left">
+                    <div class="border-2 border-[var(--pv-ink)] bg-[var(--pv-void)] p-7 shadow-[6px_6px_0_var(--pv-ink)]" data-kid="1-3-2-4-1-1" data-name="rung 3 card content" style="outline:2px solid rgba(217,43,180,.35); outline-offset:6px">
+                        <div class="flex items-start justify-between gap-4" data-kid="1-3-2-4-1-1-1" data-name="rung 3 header">
+                            <div data-kid="1-3-2-4-1-1-1-1" data-name="rung 3 header title block">
+                                <span class="pv-hud text-[9px] tracking-widest text-[var(--pv-magenta-lit)]" data-kid="1-3-2-4-1-1-1-1-1" data-name="rung 3 category label">
+                                    03 / TOOL
+                                </span>
+                                <h3 class="pv-h mt-3 text-[34px] font-bold leading-none text-[var(--pv-text)]" data-kid="1-3-2-4-1-1-1-1-2" data-name="rung 3 title">
+                                    ANIMATE
+                                </h3>
+                            </div>
+                            <!-- achievement plaque -->
+                            <div class="relative" data-kid="1-3-2-4-1-1-1-2" data-name="achievement plaque">
+                                <svg class="pix h-16 w-16" data-kid="1-3-2-4-1-1-1-2-1" data-name="achievement icon" viewbox="0 0 24 24">
+                                    <path d="M2 2h20v14H2z" fill="#d92bb4">
+                                    </path>
+                                    <path d="M4 4h16v10H4z" fill="#ff6fdc">
+                                    </path>
+                                    <path d="M6 6h12v6H6z" fill="#050508">
+                                    </path>
+                                    <path d="M8 16h3v6l-1.5-2L8 22z" fill="#d92bb4">
+                                    </path>
+                                    <path d="M13 16h3v6l-1.5-2L13 22z" fill="#d92bb4">
+                                    </path>
+                                </svg>
+                                <span class="pv-hud absolute left-1/2 top-[26px] -translate-x-1/2 text-[8px] text-[var(--pv-magenta-lit)]" data-kid="1-3-2-4-1-1-1-2-2" data-name="pro badge label">
+                                    PRO
+                                </span>
+                            </div>
+                        </div>
+                        <p class="mt-4 max-w-[360px] text-[16px] leading-relaxed text-[#b8a6bd]" data-kid="1-3-2-4-1-1-2" data-name="rung 3 description">
+                            Bring your pixel creations to life with frame-by-frame animation.
+                        </p>
+                        <div class="mt-6 flex gap-2 border-2 border-[var(--pv-ink)] bg-[#0b0910] p-3" data-dynamic="true" data-kid="1-3-2-4-1-1-3" data-name="filmstrip container" data-reason="frames injected and cycled by script" id="filmstrip">
+                        </div>
+                        <div class="mt-3 flex items-center justify-between" data-kid="1-3-2-4-1-1-4" data-name="animation settings container">
+                            <span class="pv-hud text-[8px] text-[#7c6b85]" data-kid="1-3-2-4-1-1-4-1" data-name="animation frame info">
+                                4 FRAMES · 8 FPS
+                            </span>
+                            <span class="pv-hud text-[8px] text-[var(--pv-magenta-lit)]" data-kid="1-3-2-4-1-1-4-2" data-name="pro experience label">
+                                PRO EXPERIENCE
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block" data-kid="1-3-2-4-2" data-name="rung 3 right card placeholder">
+                </div>
+                <span class="absolute left-1/2 top-16 hidden h-6 w-6 -translate-x-1/2 border-2 border-[var(--pv-ink)] bg-[var(--pv-magenta)] md:block" data-kid="1-3-2-4-3" data-name="rung 3 indicator">
+                </span>
+            </div>
+        </div>
+    </section>
+    <!-- 4. HOW IT WORKS -->
+    <section class="border-y-2 border-[var(--pv-ink)] bg-[var(--pv-stone-dk)] py-24" data-kid="1-4" data-name="how it works section" id="how">
+        <div class="mx-auto max-w-[1360px] px-6" data-kid="1-4-1" data-name="how it works content">
+            <div class="flex flex-wrap items-end justify-between gap-6" data-kid="1-4-1-1" data-name="how it works header">
+                <div data-kid="1-4-1-1-1" data-name="how it works header title">
+                    <span class="pv-hud text-[10px] tracking-[0.2em] text-[var(--pv-sun-lit)]" data-kid="1-4-1-1-1-1" data-name="quest log label">
+                        QUEST LOG
+                    </span>
+                    <h2 class="pv-h mt-4 text-[46px] font-bold leading-none" data-kid="1-4-1-1-1-2" data-name="section main title">
+                        CREATE → EDIT → ANIMATE → SHARE
+                    </h2>
+                </div>
+                <p class="max-w-[330px] text-[15px] leading-relaxed text-[var(--pv-muted)]" data-kid="1-4-1-1-2" data-name="section description text">
+                    Four slots in your creative hotbar. Scroll to equip them one by one.
+                </p>
+            </div>
+            <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4" data-dynamic="true" data-kid="1-4-1-2" data-name="hotbar slots container" data-reason="slots injected by script at load" id="hotbar">
+                <!-- slots injected -->
+            </div>
+        </div>
+    </section>
+    <!-- 5. SHOWCASE -->
+    <section class="relative h-screen overflow-hidden bg-[var(--pv-sky)]" data-kid="1-5" data-name="showcase section" id="showcase">
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 dirt border-t-2 border-[var(--pv-ink)]" data-kid="1-5-1" data-name="showcase floor dirt background">
+        </div>
+        <div class="absolute left-0 top-0 z-20 w-full px-6 pt-10" data-kid="1-5-2" data-name="showcase gallery header">
+            <div class="mx-auto flex max-w-[1360px] items-center gap-4" data-kid="1-5-2-1" data-name="gallery header line">
+                <span class="pv-hud text-[10px] tracking-[0.2em] text-[var(--pv-sun-lit)]" data-kid="1-5-2-1-1" data-name="gallery biome label">
+                    GALLERY BIOME
+                </span>
+                <span class="h-0.5 grow bg-[var(--pv-stone)]" data-kid="1-5-2-1-2" data-name="separator line">
+                </span>
+                <span class="pv-hud text-[9px] text-[var(--pv-muted)]" data-kid="1-5-2-1-3" data-name="scroll indicator text">
+                    SCROLL →
+                </span>
+            </div>
+        </div>
+        <div class="flex h-full items-center" data-kid="1-5-3" data-name="showcase track container">
+            <div class="flex items-center gap-14 pl-[8vw] pr-[10vw] will-change-transform" data-dynamic="true" data-kid="1-5-3-1" data-name="showcase art strip" data-reason="art items injected by script at load" id="strip">
+            </div>
+        </div>
+    </section>
+    <!-- 6. COMMUNITY -->
+    <section class="relative border-y-2 border-[var(--pv-ink)] bg-[var(--pv-sky-2)] py-24" data-kid="1-6" data-name="community section" id="community">
+        <div class="mx-auto max-w-[1360px] px-6" data-kid="1-6-1" data-name="community content wrapper">
+            <div class="grid gap-10 lg:grid-cols-[380px_1fr] lg:gap-14" data-kid="1-6-1-1" data-name="community grid">
+                <div data-kid="1-6-1-1-1" data-name="community info column">
+                    <div class="inline-flex items-center gap-2 border-2 border-[var(--pv-ink)] bg-[var(--pv-stone-dk)] px-3 py-2 shadow-[4px_4px_0_var(--pv-ink)]" data-kid="1-6-1-1-1-1" data-name="online badge">
+                        <span class="h-2 w-2 bg-[var(--pv-moss)] blink" data-kid="1-6-1-1-1-1-1" data-name="online status dot">
+                        </span>
+                        <span class="pv-hud text-[9px] tracking-widest text-[var(--pv-text)]" data-kid="1-6-1-1-1-1-2" data-name="online players count text">
+                            2,418 PLAYERS ONLINE
+                        </span>
+                    </div>
+                    <h2 class="pv-h mt-6 text-[44px] font-bold leading-[1.02]" data-kid="1-6-1-1-1-2" data-name="section headline">
+                        A town square
+                        <br data-kid="1-6-1-1-1-2-1" data-name="headline line break"/>
+                        made of pixels.
+                    </h2>
+                    <p class="mt-5 text-[16px] leading-relaxed text-[var(--pv-muted)]" data-kid="1-6-1-1-1-3" data-name="section description text">
+                        Soon you'll publish your artwork straight into the square, discover creations from other artists, comment and react to their work, and build a pixel-art identity that grows with every sprite you finish.
+                    </p>
+                    <div class="mt-7 flex flex-wrap gap-3" data-kid="1-6-1-1-1-4" data-name="community interaction buttons">
+                        <span class="pv-hud stk-sm bg-[var(--pv-stone)] px-3 py-2 text-[8px] tracking-widest" data-kid="1-6-1-1-1-4-1" data-name="profiles button">
+                            <i class="ti ti-users mr-1.5" data-kid="1-6-1-1-1-4-1-1" data-name="profiles icon">
+                            </i>
+                            PROFILES
+                        </span>
+                        <span class="pv-hud stk-sm bg-[var(--pv-stone)] px-3 py-2 text-[8px] tracking-widest" data-kid="1-6-1-1-1-4-2" data-name="reactions button">
+                            <i class="ti ti-heart mr-1.5" data-kid="1-6-1-1-1-4-2-1" data-name="reactions icon">
+                            </i>
+                            REACTIONS
+                        </span>
+                        <span class="pv-hud stk-sm bg-[var(--pv-stone)] px-3 py-2 text-[8px] tracking-widest" data-kid="1-6-1-1-1-4-3" data-name="comments button">
+                            <i class="ti ti-messages mr-1.5" data-kid="1-6-1-1-1-4-3-1" data-name="comments icon">
+                            </i>
+                            COMMENTS
+                        </span>
+                    </div>
+                    <div class="mt-8 border-l-4 border-[var(--pv-sun)] bg-[var(--pv-stone-dk)] p-4" data-kid="1-6-1-1-1-5" data-name="status box">
+                        <p class="pv-hud text-[9px] leading-loose text-[var(--pv-muted)]" data-kid="1-6-1-1-1-5-1" data-name="social layer status text">
+                            SOCIAL LAYER
+                            <br data-kid="1-6-1-1-1-5-1-1" data-name="text break"/>
+                            STATUS: IN DEVELOPMENT
+                        </p>
+                    </div>
+                </div>
+                <div class="columns-2 gap-3 sm:columns-3 lg:columns-4 [&>*]:mb-3" data-dynamic="true" data-kid="1-6-1-1-2" data-name="community wall gallery" data-reason="gallery items injected by script at load" id="wall">
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 7. STUDIO -->
+    <section class="relative h-[112vh] overflow-hidden bg-[var(--pv-void)]" data-kid="1-7" data-name="studio section" id="studio">
+        <!-- void workspace underneath -->
+        <div class="absolute inset-0 grid place-items-center" data-kid="1-7-1" data-name="void workspace container">
+            <div class="w-full max-w-[1080px] px-6" data-kid="1-7-1-1" data-name="studio interface container">
+                <div class="mt-[18vh] border-2 border-[#3a1642] bg-[#0d0712] shadow-[6px_6px_0_#000]" data-kid="1-7-1-1-1" data-name="studio UI box" id="studioUI" style="mask-image:linear-gradient(180deg,#000 0%,#000 72%,transparent 100%);-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 72%,transparent 100%)">
+                    <div class="flex items-center gap-3 border-b-2 border-[#2a1030] bg-[#120717] px-4 py-2.5" data-kid="1-7-1-1-1-1" data-name="ui header">
+                        <span class="h-2.5 w-2.5 bg-[var(--pv-magenta)]" data-kid="1-7-1-1-1-1-1" data-name="ui status indicator">
+                        </span>
+                        <span class="pv-hud text-[8px] tracking-widest text-[var(--pv-magenta-lit)]" data-kid="1-7-1-1-1-1-2" data-name="ui project title">
+                            PIXELVERSE STUDIO · TIMELINE
+                        </span>
+                        <span class="pv-hud ml-auto text-[8px] text-[#6d5a75]" data-kid="1-7-1-1-1-1-3" data-name="ui setting status">
+                            ONION SKIN: ON
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-[150px_1fr]" data-kid="1-7-1-1-1-2" data-name="ui content area">
+                        <div class="border-r-2 border-[#2a1030]" data-kid="1-7-1-1-1-2-1" data-name="layers sidebar">
+                            <div class="pv-hud px-3 py-3 text-[8px] text-[#6d5a75]" data-kid="1-7-1-1-1-2-1-1" data-name="layers header">
+                                LAYERS
+                            </div>
+                            <div class="pv-hud space-y-px text-[8px]" data-kid="1-7-1-1-1-2-1-2" data-name="layer list">
+                                <div class="flex items-center gap-2 bg-[#1a0a20] px-3 py-2.5 text-[var(--pv-magenta-lit)]" data-kid="1-7-1-1-1-2-1-2-1" data-name="layer hero active">
+                                    <i class="ti ti-eye text-[11px]" data-kid="1-7-1-1-1-2-1-2-1-1" data-name="eye icon">
+                                    </i>
+                                    HERO_IDLE
+                                </div>
+                                <div class="flex items-center gap-2 px-3 py-2.5 text-[#6d5a75]" data-kid="1-7-1-1-1-2-1-2-2" data-name="layer cape item">
+                                    <i class="ti ti-eye text-[11px]" data-kid="1-7-1-1-1-2-1-2-2-1" data-name="eye icon">
+                                    </i>
+                                    CAPE_FLAP
+                                </div>
+                                <div class="flex items-center gap-2 px-3 py-2.5 text-[#6d5a75]" data-kid="1-7-1-1-1-2-1-2-3" data-name="layer fx item">
+                                    <i class="ti ti-eye text-[11px]" data-kid="1-7-1-1-1-2-1-2-3-1" data-name="eye icon">
+                                    </i>
+                                    FX_DUST
+                                </div>
+                                <div class="flex items-center gap-2 px-3 py-2.5 text-[#6d5a75]" data-kid="1-7-1-1-1-2-1-2-4" data-name="layer bg item">
+                                    <i class="ti ti-eye text-[11px]" data-kid="1-7-1-1-1-2-1-2-4-1" data-name="eye icon">
+                                    </i>
+                                    BG_PLATE
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative" data-kid="1-7-1-1-1-2-2" data-name="timeline area">
+                            <div class="flex h-9 items-end border-b-2 border-[#2a1030] bg-[#100615]" data-dynamic="true" data-kid="1-7-1-1-1-2-2-1" data-name="timeline ruler" data-reason="ruler divisions injected by script" id="ruler">
+                            </div>
+                            <div class="relative" data-dynamic="true" data-kid="1-7-1-1-1-2-2-2" data-name="timeline tracks" data-reason="timeline tracks injected by script" id="tracks">
+                            </div>
+                            <div class="absolute left-[22%] top-0 h-full w-0.5 bg-[var(--pv-magenta-lit)]" data-kid="1-7-1-1-1-2-2-3" data-name="timeline playhead">
+                                <span class="absolute -left-1.5 top-0 h-3 w-3.5 bg-[var(--pv-magenta-lit)]" data-kid="1-7-1-1-1-2-2-3-1" data-name="playhead handle">
+                                </span>
+                            </div>
+                            <div class="absolute bottom-4 left-6 flex items-end gap-6 opacity-90" data-kid="1-7-1-1-1-2-2-4" data-name="ghost layer container">
+                                <span class="opacity-25" data-dynamic="true" data-kid="1-7-1-1-1-2-2-4-1" data-name="ghost layer 1" data-reason="rendered by script" id="ghost1">
+                                </span>
+                                <span class="opacity-50" data-dynamic="true" data-kid="1-7-1-1-1-2-2-4-2" data-name="ghost layer 2" data-reason="rendered by script" id="ghost2">
+                                </span>
+                                <span data-dynamic="true" data-kid="1-7-1-1-1-2-2-4-3" data-name="ghost layer 3" data-reason="rendered by script" id="ghost3">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- cracking earthy plates -->
+        <div class="absolute inset-x-0 top-0 h-[62%] border-b-0" data-kid="1-7-2" data-name="upper terrain layer" id="crackTop" style="background:linear-gradient(180deg,var(--pv-sky) 0%,var(--pv-sky-2) 100%); clip-path:polygon(0 0,100% 0,100% 74%,92% 82%,86% 70%,78% 86%,70% 72%,62% 90%,54% 76%,46% 92%,38% 74%,30% 88%,22% 72%,14% 84%,6% 70%,0 80%)">
+        </div>
+        <div class="absolute inset-x-0 bottom-0 h-[46%]" data-kid="1-7-3" data-name="lower terrain layer" id="crackBottom" style="background:linear-gradient(0deg,#20180f 0%,var(--pv-stone-dk) 100%); clip-path:polygon(0 30%,7% 20%,15% 34%,23% 18%,31% 32%,39% 16%,47% 30%,55% 14%,63% 30%,71% 18%,79% 32%,87% 20%,95% 34%,100% 24%,100% 100%,0 100%)">
+        </div>
+        <!-- copy -->
+        <div class="absolute inset-x-0 top-[8%] z-20" data-kid="1-7-4" data-name="studio copy container" id="studioCopy">
+            <div class="mx-auto max-w-[1360px] px-6" data-kid="1-7-4-1" data-name="studio copy content">
+                <div class="max-w-[800px]" data-kid="1-7-4-1-1" data-name="studio headline container">
+                    <span class="pv-hud text-[10px] tracking-[0.2em] text-[var(--pv-magenta-lit)]" data-kid="1-7-4-1-1-1" data-name="studio subheadline">
+                        // SOMETHING BENEATH THE WORLD
+                    </span>
+                    <h2 class="pv-h mt-5 text-[52px] font-bold leading-[0.98]" data-kid="1-7-4-1-1-2" data-name="studio headline" style="text-shadow:5px 5px 0 #0d1017">
+                        Bring Your Pixels to Life.
+                    </h2>
+                    <p class="mt-5 max-w-[420px] text-[17px] leading-relaxed text-[#b9a7bf]" data-kid="1-7-4-1-1-3" data-name="studio description">
+                        A professional animation workspace designed for pixel artists.
+                    </p>
+                    <div class="mt-9 flex flex-wrap items-center gap-5" data-kid="1-7-4-1-1-4" data-name="studio buttons container">
+                        <a class="btn pv-hud bg-[var(--pv-magenta)] px-6 py-4 text-[10px] tracking-widest text-[#fff]" data-kid="1-7-4-1-1-4-1" data-name="studio cta button" href="blank.html?view=studio">
+                            EXPLORE PIXELVERSE STUDIO
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 8. FINAL CTA -->
+    <section class="relative overflow-hidden bg-[var(--pv-void)] py-28" data-kid="1-8" data-name="cta section" id="cta">
+        <div class="pointer-events-none absolute inset-0 opacity-[0.35]" data-kid="1-8-1" data-name="cta background effect" style="background:radial-gradient(circle at 50% 55%,rgba(232,141,48,.28),transparent 55%)">
+        </div>
+        <div class="relative mx-auto flex max-w-[1360px] flex-col items-center px-6" data-kid="1-8-2" data-name="cta content container">
+            <!-- portal -->
+            <div class="relative" data-kid="1-8-2-1" data-name="portal visual container">
+                <div class="relative h-[300px] w-[220px] border-2 border-[var(--pv-ink)] bg-[#0b0b12]" data-kid="1-8-2-1-1" data-name="portal frame" style="clip-path:polygon(0 22%,10% 22%,10% 12%,25% 12%,25% 5%,75% 5%,75% 12%,90% 12%,90% 22%,100% 22%,100% 100%,0 100%)">
+                    <div class="absolute inset-[18px] overflow-hidden border-2 border-[var(--pv-ink)]" data-kid="1-8-2-1-1-1" data-name="portal border" style="clip-path:polygon(0 20%,12% 20%,12% 10%,28% 10%,28% 3%,72% 3%,72% 10%,88% 10%,88% 20%,100% 20%,100% 100%,0 100%)">
+                        <div class="shimmer h-[calc(100%+64px)] w-full" data-kid="1-8-2-1-1-1-1" data-name="portal shimmer" style="background:repeating-linear-gradient(0deg,#f7b45e 0 8px,#e88d30 8px 16px,#b85f1c 16px 24px,#e88d30 24px 32px)">
+                        </div>
+                    </div>
+                </div>
+                <span class="absolute -left-8 bottom-0 h-4 w-4 bg-[var(--pv-sun)] flick" data-kid="1-8-2-1-2" data-name="portal flame left">
+                </span>
+                <span class="absolute -right-8 bottom-6 h-3 w-3 bg-[var(--pv-sun-lit)] flick" data-kid="1-8-2-1-3" data-name="portal flame right">
+                </span>
+                <span class="bob absolute -left-24 bottom-0" data-dynamic="true" data-kid="1-8-2-1-4" data-name="cta character sprite" data-reason="rendered by script at load" id="ctaChar">
+                </span>
+            </div>
+            <h2 class="pv-h mt-14 text-center text-[62px] font-bold leading-none" data-kid="1-8-2-2" data-name="cta headline text" style="text-shadow:6px 6px 0 #0d1017">
+                Your world is waiting.
+            </h2>
+            <p class="mt-6 text-[18px] text-[var(--pv-muted)]" data-kid="1-8-2-3" data-name="cta subheadline text">
+                Start creating your first pixel.
+            </p>
+            <a class="btn pv-hud mt-10 bg-[var(--pv-sun)] px-10 py-5 text-[13px] tracking-[0.15em] text-[var(--pv-ink)]" data-kid="1-8-2-4" data-name="cta enter button" href="blank.html">
+                ENTER PIXELVERSE
+            </a>
+        </div>
+    </section>
+    <!-- 9. FOOTER -->
+    <footer class="relative bg-[var(--pv-stone-dk)] pt-24" data-kid="1-9" data-name="footer area">
+        <div class="absolute -top-px left-0 h-16 w-full" data-dynamic="true" data-kid="1-9-1" data-name="footer terrain path" data-reason="path generated by script" id="footTerrain" style="transform:translateY(-100%)">
+        </div>
+        <div class="mx-auto max-w-[1360px] px-6 pb-8" data-kid="1-9-2" data-name="footer content wrapper">
+            <div class="grid gap-10 border-b-2 border-[var(--pv-ink)] pb-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]" data-kid="1-9-2-1" data-name="footer grid">
+                <div data-kid="1-9-2-1-1" data-name="footer brand column">
+                    <div class="flex items-center gap-3" data-kid="1-9-2-1-1-1" data-name="footer logo container">
+                        <span data-dynamic="true" data-kid="1-9-2-1-1-1-1" data-name="footer sprite" data-reason="rendered by script at load" id="footSprite">
+                        </span>
+                        <span class="pv-hud text-[12px] tracking-[0.14em]" data-kid="1-9-2-1-1-1-2" data-name="footer brand text">
+                            PIXELVERSE
+                        </span>
+                    </div>
+                    <p class="mt-4 max-w-[280px] text-[15px] leading-relaxed text-[var(--pv-muted)]" data-kid="1-9-2-1-1-2" data-name="footer description">
+                        A pixel-art creation platform for people who build worlds one square at a time.
+                    </p>
+                    <div class="mt-6 flex gap-2" data-dynamic="true" data-kid="1-9-2-1-1-3" data-name="social links container" data-reason="social icons injected by script" id="social">
+                    </div>
+                </div>
+                <div data-kid="1-9-2-1-2" data-name="footer tools list">
+                    <p class="pv-hud mb-4 text-[9px] tracking-widest text-[var(--pv-sun-lit)]" data-kid="1-9-2-1-2-1" data-name="tools label">
+                        TOOLS
+                    </p>
+                    <ul class="space-y-2.5 text-[15px] text-[var(--pv-muted)]" data-kid="1-9-2-1-2-2" data-name="tools links">
+                        <li data-kid="1-9-2-1-2-2-1" data-name="canvas link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-2-2-1-1" data-name="canvas link" href="blank.html">
+                                Canvas
+                            </a>
+                        </li>
+                        <li data-kid="1-9-2-1-2-2-2" data-name="reference link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-2-2-2-1" data-name="reference link" href="image.html">
+                                Reference
+                            </a>
+                        </li>
+                        <li data-kid="1-9-2-1-2-2-3" data-name="studio link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-2-2-3-1" data-name="studio link" href="blank.html?view=studio">
+                                Studio (Pro)
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div data-kid="1-9-2-1-3" data-name="footer world list">
+                    <p class="pv-hud mb-4 text-[9px] tracking-widest text-[var(--pv-sun-lit)]" data-kid="1-9-2-1-3-1" data-name="world label">
+                        WORLD
+                    </p>
+                    <ul class="space-y-2.5 text-[15px] text-[var(--pv-muted)]" data-kid="1-9-2-1-3-2" data-name="world links">
+                        <li data-kid="1-9-2-1-3-2-1" data-name="showcase link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-3-2-1-1" data-name="showcase link" href="#showcase">
+                                Showcase
+                            </a>
+                        </li>
+                        <li data-kid="1-9-2-1-3-2-2" data-name="town square link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-3-2-2-1" data-name="town square link" href="#community">
+                                Town Square
+                            </a>
+                        </li>
+                        <li data-kid="1-9-2-1-3-2-3" data-name="quest log link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-3-2-3-1" data-name="quest log link" href="#how">
+                                Quest Log
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div data-kid="1-9-2-1-4" data-name="footer support list">
+                    <p class="pv-hud mb-4 text-[9px] tracking-widest text-[var(--pv-sun-lit)]" data-kid="1-9-2-1-4-1" data-name="support label">
+                        SUPPORT
+                    </p>
+                    <ul class="space-y-2.5 text-[15px] text-[var(--pv-muted)]" data-kid="1-9-2-1-4-2" data-name="support links">
+                        <li data-kid="1-9-2-1-4-2-1" data-name="guides link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-4-2-1-1" data-name="guides link" href="#">
+                                Guides
+                            </a>
+                        </li>
+                        <li data-kid="1-9-2-1-4-2-2" data-name="changelog link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-4-2-2-1" data-name="changelog link" href="#">
+                                Changelog
+                            </a>
+                        </li>
+                        <li data-kid="1-9-2-1-4-2-3" data-name="contact link item">
+                            <a class="hover:text-[var(--pv-text)]" data-kid="1-9-2-1-4-2-3-1" data-name="contact link" href="#">
+                                Contact
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-6" data-kid="1-9-2-2" data-name="footer metadata row">
+                <p class="pv-hud text-[8px] tracking-widest text-[var(--pv-muted)]" data-kid="1-9-2-2-1" data-name="copyright notice">
+                    © 2025 PIXELVERSE. ALL PIXELS RESERVED.
+                </p>
+                <div class="flex items-center gap-2 border-2 border-[var(--pv-ink)] bg-[var(--pv-sky)] px-3 py-2" data-kid="1-9-2-2-2" data-name="version indicator widget">
+                    <span class="h-2 w-2 bg-[var(--pv-sun)] blink" data-kid="1-9-2-2-2-1" data-name="version indicator dot">
+                    </span>
+                    <span class="pv-hud text-[8px] text-[var(--pv-muted)]" data-kid="1-9-2-2-2-2" data-name="version and render count text">
+                        v0.9.2 · pixels rendered: 1,284,933
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
   </div>
 
-  <h2 class="landing__prompt">What do you want to make?</h2>
+  <!-- Libraries used by the recovered animation code -->
+  <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@5/bundled/locomotive-scroll.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
 
-  <div class="choice-grid">
-    <a href="blank.html" class="choice" data-action="blank">
-      <span class="choice__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="34" height="34"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" opacity=".35"/></g></svg>
-      </span>
-      <span class="choice__title">Start blank canvas</span>
-      <span class="choice__body">An empty grid and a full set of tools. For when you already know what you're drawing.</span>
-      <span class="choice__go">Open editor →</span>
-    </a>
-
-    <a href="image.html" class="choice" data-action="image">
-      <span class="choice__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="34" height="34"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="8.5" r="1.5"/></g></svg>
-      </span>
-      <span class="choice__title">Create from image</span>
-      <span class="choice__body">Upload a photo, turn it into a pixel reference, then rebuild it by hand and score your accuracy.</span>
-      <span class="choice__go">Upload an image →</span>
-    </a>
-  </div>
-</section>
-
-<script type="module" src="js/main.js"></script>
+  <!-- Recovered JavaScript -->
+  <script src="script.js"></script>
 </body>
 </html>

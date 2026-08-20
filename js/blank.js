@@ -8,7 +8,12 @@ import { go } from './core/router.js';
 function boot() {
   initEditor();
   initStudio();
-  go('editor');
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('view') === 'studio' || window.location.hash === '#studio') {
+    go('studio');
+  } else {
+    go('editor');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', boot);
