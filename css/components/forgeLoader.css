@@ -100,19 +100,19 @@
   pointer-events: none;
 }
 
-/* Line 1: ANIMATION */
+/* Line 1: PIXELVERSE */
 .forge-line-1 {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--font-mono);
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.10em;
 }
 
 .forge-line-1 .char {
   display: inline-block;
-  width: 26px;
+  width: 22px;
   text-align: center;
   color: rgba(255, 255, 255, 0.08);
   border-bottom: 3px solid rgba(255, 255, 255, 0.12);

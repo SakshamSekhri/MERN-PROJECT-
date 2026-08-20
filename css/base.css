@@ -1,11 +1,10 @@
-/* ═══════════════════════════════════════════════
-   PixelVerse — design tokens & reset
-   ═══════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css');
 
 :root {
   /* surfaces — warm purple-black, never neutral grey */
   --void:      #12101c;
-  --void-2:    #17142408;
+  --void-2:    #171424;
   --panel:     #1e1a2e;
   --panel-hi:  #2a2440;
   --line:      #372f52;
@@ -16,15 +15,15 @@
   --ink-mute:  #6f668f;
 
   /* tool identity colours — each tool owns one */
-  --hot:       #ff2e88;   /* pencil   */
-  --cyan:      #22d3ee;   /* eraser   */
-  --lime:      #a3e635;   /* fill     */
-  --gold:      #fbbf24;   /* picker   */
-  --violet:    #a855f7;   /* frames   */
+  --hot:       #ff2e88;   /* pencil / primary action */
+  --cyan:      #22d3ee;   /* reference / eraser   */
+  --lime:      #a3e635;   /* fill / success      */
+  --gold:      #fbbf24;   /* picker / indicators */
+  --violet:    #a855f7;   /* animation / studio  */
   --danger:    #f43f5e;
 
   /* type */
-  --font-display: 'Silkscreen', 'Courier New', monospace;
+  --font-display: 'Silkscreen', 'Press Start 2P', monospace;
   --font-body:    'Space Grotesk', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
@@ -37,13 +36,7 @@
   --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
 }
 
-/* The hidden attribute must beat any display rule we set later.
- * Without !important, a class like .ref-placeholder { display: flex }
- * wins over the browser default [hidden] { display: none }, and the
- * element stays visible even with the attribute set. */
 [hidden] { display: none !important; }
-
-*, *::before, *::after { box-sizing: border-box; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -83,6 +76,26 @@ kbd {
 /* ── view switching ── */
 .view { display: none; height: 100%; }
 .view.is-active { display: flex; flex-direction: column; }
+
+/* ── custom pixel scrollbars ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--hot);
+}
+
+/* ── pixel utilities ── */
+.stk { border: var(--border) solid var(--line); box-shadow: 6px 6px 0 #000; }
+.stk-sm { border: var(--border) solid var(--line); box-shadow: 4px 4px 0 #000; }
 
 /* ── accessibility floor ── */
 :focus-visible {

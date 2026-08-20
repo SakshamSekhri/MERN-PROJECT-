@@ -26,9 +26,9 @@ export function playForgeTransition(onComplete) {
   overlayEl.innerHTML = `
     <div class="forge-stage">
       <div class="forge-logo-container">
-        <!-- Line 1: ANIMATION (9 Slots) -->
+        <!-- Line 1: PIXELVERSE (10 Slots) -->
         <div class="forge-line-1" id="forge-line-1">
-          <span class="char slot" data-idx="0">A</span><span class="char slot" data-idx="1">N</span><span class="char slot" data-idx="2">I</span><span class="char slot" data-idx="3">M</span><span class="char slot" data-idx="4">A</span><span class="char slot" data-idx="5">T</span><span class="char slot" data-idx="6">I</span><span class="char slot" data-idx="7">O</span><span class="char slot" data-idx="8">N</span>
+          <span class="char slot" data-idx="0">P</span><span class="char slot" data-idx="1">I</span><span class="char slot" data-idx="2">X</span><span class="char slot" data-idx="3">E</span><span class="char slot" data-idx="4">L</span><span class="char slot" data-idx="5">V</span><span class="char slot" data-idx="6">E</span><span class="char slot" data-idx="7">R</span><span class="char slot" data-idx="8">S</span><span class="char slot" data-idx="9">E</span>
         </div>
         <!-- Line 2: STUDIO (6 Slots) -->
         <div class="forge-line-2" id="forge-line-2">
@@ -37,7 +37,7 @@ export function playForgeTransition(onComplete) {
       </div>
 
       <canvas class="forge-canvas" width="440" height="300"></canvas>
-      <div class="forge-footer-tag">FORGING ANIMATION STUDIO</div>
+      <div class="forge-footer-tag">FORGING PIXELVERSE STUDIO</div>
     </div>
   `;
 
@@ -68,7 +68,7 @@ export function playForgeTransition(onComplete) {
   const anvilY = 205;
 
   // Target X/Y coordinates for letter assembly
-  const line1Xs = [86, 119, 152, 185, 218, 251, 284, 317, 350];
+  const line1Xs = [74, 106, 138, 170, 202, 234, 266, 298, 330, 362];
   const line1Y = 56;
 
   const line2Xs = [142, 173, 204, 235, 266, 297];
@@ -174,7 +174,7 @@ export function playForgeTransition(onComplete) {
     } else if (strikeIndex === 4) {
       overlayEl.classList.add('shake-4');
       addSparks(48, 1.9);
-      spawnLetterForgingParticles(1, [7, 8]); // Forges 'O' & 'N' -> Line 1 Complete!
+      spawnLetterForgingParticles(1, [7, 8, 9]); // Forges 'R', 'S', 'E' -> Line 1 Complete!
     } else if (strikeIndex === 5) {
       overlayEl.classList.add('shake-5');
       addSparks(42, 1.8);

@@ -8,26 +8,45 @@
   border: var(--border) solid var(--line);
   border-radius: var(--radius);
   color: var(--ink);
-  font-size: 12px;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .06em;
   padding: var(--s2) var(--s3);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
-  transition: background .12s, border-color .12s, transform .06s;
+  transition: background .12s, border-color .12s, transform .08s, box-shadow .08s;
+  box-shadow: 2px 2px 0 #000;
+  text-decoration: none;
 }
-.btn:hover:not(:disabled)  { background: var(--line); }
-.btn:active:not(:disabled) { transform: translateY(1px); }
-.btn:disabled              { opacity: .35; cursor: not-allowed; }
+.btn:hover:not(:disabled)  { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 #000; background: var(--panel-hi); }
+.btn:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
+.btn:disabled              { opacity: .35; cursor: not-allowed; box-shadow: none; }
 
-.btn--wide  { width: 100%; justify-content: space-between; }
-.btn--ghost { background: transparent; }
-.btn--violet { border-color: var(--violet); color: var(--violet); background: transparent; }
+.btn--wide    { width: 100%; justify-content: space-between; }
+.btn--ghost   { background: transparent; box-shadow: none; }
+.btn--ghost:hover:not(:disabled) { background: var(--panel-hi); box-shadow: 2px 2px 0 #000; }
+
+.btn--hot     { border-color: var(--hot); color: var(--hot); background: transparent; }
+.btn--hot:hover:not(:disabled) { background: color-mix(in srgb, var(--hot) 18%, transparent); }
+
+.btn--cyan    { border-color: var(--cyan); color: var(--cyan); background: transparent; }
+.btn--cyan:hover:not(:disabled) { background: color-mix(in srgb, var(--cyan) 18%, transparent); }
+
+.btn--lime    { border-color: var(--lime); color: var(--lime); background: transparent; }
+.btn--lime:hover:not(:disabled) { background: color-mix(in srgb, var(--lime) 18%, transparent); }
+
+.btn--gold    { border-color: var(--gold); color: var(--gold); background: transparent; }
+.btn--gold:hover:not(:disabled) { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+
+.btn--violet  { border-color: var(--violet); color: var(--violet); background: transparent; }
 .btn--violet:hover:not(:disabled) { background: color-mix(in srgb, var(--violet) 18%, transparent); }
-.btn--danger { border-color: color-mix(in srgb, var(--danger) 55%, var(--line)); color: var(--danger); background: transparent; }
-.btn--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 15%, transparent); }
-.btn.is-on { border-color: var(--cyan); color: var(--cyan); }
+
+.btn--danger  { border-color: var(--danger); color: var(--danger); background: transparent; }
+.btn--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 18%, transparent); }
+
+.btn.is-on    { border-color: var(--cyan); color: var(--cyan); box-shadow: 3px 3px 0 #000; }
 
 /* ── fields ── */
 .field { display: flex; align-items: center; gap: var(--s2); }
