@@ -13,6 +13,7 @@ import { Player } from '../animation/player.js';
 import { computeStats, formatDuration } from '../animation/stats.js';
 import { pencil, eraser, fill, pick, drawLine } from '../canvas/tools.js';
 import { go, onEnter } from '../core/router.js';
+import { openStudioSaveModal } from './saveModal.js';
 
 const FPS_OPTIONS = [8, 12, 16, 24, 30];
 
@@ -331,6 +332,15 @@ function bindTransport() {
     backBtn.addEventListener('click', () => {
       player.pause();
       go('editor');
+    });
+  }
+
+  const saveBtn = document.getElementById('btn-studio-save');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      player.pause();
+      updateTransport();
+      openStudioSaveModal(state);
     });
   }
 

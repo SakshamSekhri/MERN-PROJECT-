@@ -282,6 +282,17 @@ body.is-modal-open {
   margin-top: var(--s1);
 }
 
+.save-modal__format-group--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.save-modal__preview-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--gold);
+  margin-top: 4px;
+}
+
 .save-modal__fmt-btn {
   background: var(--panel);
   border: var(--border) solid var(--line);

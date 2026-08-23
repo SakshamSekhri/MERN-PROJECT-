@@ -1,15 +1,21 @@
 /**
- * PixelVerse — Save & Export Modal.
+ * PixelVerse — Save & Export Modals.
  *
- * Interactive modal allowing users to:
+ * Interactive modals allowing users to:
  * 1. Perform local project auto-save & JSON backup.
- * 2. Save As Single Frame / Page:
- *    - Formats: PNG Picture (.png), JPEG Picture (.jpg), BMP Picture (.bmp)
- * 3. Save As Multiple Frames / Pages:
- *    - Frame selection & Multi-frame Sprite Sheet generator (.png)
+ * 2. Save As Single Frame / Page (PNG, JPEG, BMP).
+ * 3. Save As Multiple Frames / Sprite Sheet.
+ * 4. Save As Studio Animations (GIF, WebP, MP4, Sprite Sheet).
  */
 
-import { downloadSingleFrame, downloadSpriteSheet, gridToCanvas } from '../animation/export.js';
+import {
+  downloadSingleFrame,
+  downloadSpriteSheet,
+  downloadAnimatedGif,
+  downloadAnimatedWebP,
+  downloadMp4Video,
+  gridToCanvas
+} from '../animation/export.js';
 import { serialise } from '../core/project.js';
 
 let modalEl = null;
@@ -18,8 +24,16 @@ let currentTab = 'single'; // 'single' | 'multiple'
 let currentFormat = 'png'; // 'png' | 'jpeg' | 'bmp'
 let selectedFrameIndices = [];
 
+// Studio Modal State
+let studioModalEl = null;
+let studioFormat = 'gif'; // 'gif' | 'webp' | 'mp4' | 'spritesheet'
+let studioFps = 12;
+let studioScale = 4;
+let studioAnimTimer = null;
+let studioPreviewFrameIdx = 0;
+
 /**
- * Open the Save & Export Modal.
+ * Open the Editor Save & Export Modal.
  */
 export function openSaveModal(state, onSaveProject) {
   currentState = state;
@@ -28,16 +42,13 @@ export function openSaveModal(state, onSaveProject) {
     buildModal();
   }
 
-  // Trigger project save if callback provided
   if (onSaveProject) {
     onSaveProject();
   }
 
-  // Reset selected frames (default all checked)
   const totalFrames = state.frames?.length || 1;
   selectedFrameIndices = Array.from({ length: totalFrames }, (_, i) => i);
 
-  // Update timestamp
   const timeEl = modalEl.querySelector('#save-modal-timestamp');
   if (timeEl) {
     const now = new Date();
@@ -55,7 +66,7 @@ export function openSaveModal(state, onSaveProject) {
 }
 
 /**
- * Close the Save & Export Modal.
+ * Close the Editor Save Modal.
  */
 export function closeSaveModal() {
   if (modalEl) {
@@ -65,7 +76,39 @@ export function closeSaveModal() {
 }
 
 /**
- * Construct modal DOM element once.
+ * Open the Studio Animation Save Modal.
+ */
+export function openStudioSaveModal(state) {
+  currentState = state;
+  studioFps = state.fps || 12;
+
+  if (!studioModalEl) {
+    buildStudioModal();
+  }
+
+  updateStudioFormatUI();
+  startStudioPreviewAnim();
+
+  studioModalEl.hidden = false;
+  document.body.classList.add('is-modal-open');
+}
+
+/**
+ * Close the Studio Save Modal.
+ */
+export function closeStudioSaveModal() {
+  if (studioModalEl) {
+    studioModalEl.hidden = true;
+  }
+  if (studioAnimTimer) {
+    clearInterval(studioAnimTimer);
+    studioAnimTimer = null;
+  }
+  document.body.classList.remove('is-modal-open');
+}
+
+/**
+ * Construct Editor Save Modal.
  */
 function buildModal() {
   modalEl = document.createElement('div');
@@ -104,7 +147,6 @@ function buildModal() {
         </div>
 
         <div class="save-modal__save-as-container">
-          <!-- Save As Options / Tabs -->
           <div class="save-modal__tabs">
             <div class="save-modal__tab is-active" data-tab="single" id="tab-single">
               <div class="save-modal__tab-header">
@@ -230,36 +272,27 @@ function buildModal() {
 
   document.body.appendChild(modalEl);
 
-  // Event Listeners
   modalEl.querySelector('#save-modal-close')?.addEventListener('click', closeSaveModal);
   modalEl.querySelector('.save-modal__backdrop')?.addEventListener('click', closeSaveModal);
 
-  // Keyboard Escape
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !modalEl.hidden) {
-      closeSaveModal();
-    }
+    if (e.key === 'Escape' && !modalEl.hidden) closeSaveModal();
   });
 
-  // Tab Hover & Click Navigation
   const tabs = modalEl.querySelectorAll('.save-modal__tab');
   tabs.forEach(tab => {
-    const targetTab = tab.dataset.tab;
-    // Hover event for instant inspection / tab switching
     tab.addEventListener('mouseenter', () => {
-      currentTab = targetTab;
+      currentTab = tab.dataset.tab;
       updateTabUI();
       updatePreviews();
     });
-    // Click event to lock selection
     tab.addEventListener('click', () => {
-      currentTab = targetTab;
+      currentTab = tab.dataset.tab;
       updateTabUI();
       updatePreviews();
     });
   });
 
-  // Format selector buttons (PNG, JPEG, BMP)
   const fmtBtns = modalEl.querySelectorAll('.save-modal__fmt-btn');
   fmtBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -269,12 +302,10 @@ function buildModal() {
     });
   });
 
-  // Scale & Frame dropdown changes
   modalEl.querySelector('#single-frame-select')?.addEventListener('change', updatePreviews);
   modalEl.querySelector('#single-scale-select')?.addEventListener('change', updatePreviews);
   modalEl.querySelector('#multi-scale-select')?.addEventListener('change', updatePreviews);
 
-  // Select All Frames button
   modalEl.querySelector('#btn-frames-select-all')?.addEventListener('click', () => {
     const totalFrames = currentState.frames?.length || 1;
     selectedFrameIndices = Array.from({ length: totalFrames }, (_, i) => i);
@@ -283,7 +314,6 @@ function buildModal() {
     updatePreviews();
   });
 
-  // Export JSON project file
   modalEl.querySelector('#btn-modal-export-json')?.addEventListener('click', () => {
     if (!currentState) return;
     const jsonStr = JSON.stringify(serialise(currentState), null, 2);
@@ -294,7 +324,6 @@ function buildModal() {
     link.click();
   });
 
-  // Single Frame Export action
   modalEl.querySelector('#btn-export-single')?.addEventListener('click', () => {
     if (!currentState) return;
     const frameSelect = modalEl.querySelector('#single-frame-select');
@@ -308,7 +337,6 @@ function buildModal() {
     downloadSingleFrame(frame.grid, currentFormat, `pixelverse-page-${frameIdx + 1}`, scale);
   });
 
-  // Multi-frame Sprite Sheet Export action
   modalEl.querySelector('#btn-export-multi')?.addEventListener('click', () => {
     if (!currentState || !currentState.frames) return;
     const scaleSelect = modalEl.querySelector('#multi-scale-select');
@@ -324,8 +352,210 @@ function buildModal() {
 }
 
 /**
- * Populate single-frame dropdown choices.
+ * Construct Studio Animation Save Modal.
  */
+function buildStudioModal() {
+  studioModalEl = document.createElement('div');
+  studioModalEl.className = 'save-modal';
+  studioModalEl.id = 'studio-save-modal';
+  studioModalEl.hidden = true;
+
+  studioModalEl.innerHTML = `
+    <div class="save-modal__backdrop"></div>
+    <div class="save-modal__sheet">
+      <div class="save-modal__head">
+        <div class="save-modal__title-group">
+          <h2 class="save-modal__title">STUDIO ANIMATION EXPORT</h2>
+          <span class="save-modal__sub">Save your sequence as GIF, WebP, MP4, or Sprite Sheet</span>
+        </div>
+        <button class="save-modal__close" id="studio-modal-close" title="Close">×</button>
+      </div>
+
+      <div class="save-modal__section">
+        <div class="save-modal__section-header">
+          <span class="save-modal__section-title">SAVE AS</span>
+          <span class="save-modal__section-hint">Select animation format</span>
+        </div>
+
+        <div class="save-modal__format-group save-modal__format-group--4">
+          <button class="save-modal__fmt-btn is-active" data-sfmt="gif">
+            <span class="fmt-title">GIF Animation</span>
+            <span class="fmt-ext">.gif (Animated)</span>
+          </button>
+          <button class="save-modal__fmt-btn" data-sfmt="webp">
+            <span class="fmt-title">WebP Animation</span>
+            <span class="fmt-ext">.webp (High Quality)</span>
+          </button>
+          <button class="save-modal__fmt-btn" data-sfmt="mp4">
+            <span class="fmt-title">MP4 Video</span>
+            <span class="fmt-ext">.mp4 (Video Stream)</span>
+          </button>
+          <button class="save-modal__fmt-btn" data-sfmt="spritesheet">
+            <span class="fmt-title">Sprite Sheet</span>
+            <span class="fmt-ext">.png (Grid Strip)</span>
+          </button>
+        </div>
+
+        <div class="save-modal__panel">
+          <div class="save-modal__panel-layout">
+            <div class="save-modal__panel-opts">
+              <label class="field field--block">
+                <span class="field__label">Frame Rate (FPS)</span>
+                <select class="select" id="studio-fps-select">
+                  <option value="8">8 FPS</option>
+                  <option value="12" selected>12 FPS (Standard)</option>
+                  <option value="16">16 FPS</option>
+                  <option value="24">24 FPS (Cinematic)</option>
+                  <option value="30">30 FPS (Smooth)</option>
+                </select>
+              </label>
+
+              <label class="field field--block">
+                <span class="field__label">Resolution Scale</span>
+                <select class="select" id="studio-scale-select">
+                  <option value="1">1x Actual Pixels (32px)</option>
+                  <option value="4" selected>4x High Res (128px)</option>
+                  <option value="8">8x HD (256px)</option>
+                  <option value="16">16x Ultra HD (512px)</option>
+                </select>
+              </label>
+
+              <button class="btn btn--gold btn--wide" id="btn-export-studio-action">
+                <span>Save Animation as <span id="studio-export-fmt-label">GIF</span></span>
+                <span>↓</span>
+              </button>
+            </div>
+
+            <div class="save-modal__preview-box">
+              <span class="save-modal__preview-label">Live Animation Preview</span>
+              <canvas class="save-modal__preview-canvas" id="studio-preview-canvas" width="192" height="192"></canvas>
+              <span class="save-modal__preview-sub" id="studio-preview-sub-info">Sequence Preview</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(studioModalEl);
+
+  studioModalEl.querySelector('#studio-modal-close')?.addEventListener('click', closeStudioSaveModal);
+  studioModalEl.querySelector('.save-modal__backdrop')?.addEventListener('click', closeStudioSaveModal);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !studioModalEl.hidden) closeStudioSaveModal();
+  });
+
+  const fmtBtns = studioModalEl.querySelectorAll('.save-modal__fmt-btn');
+  fmtBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      studioFormat = btn.dataset.sfmt;
+      updateStudioFormatUI();
+      startStudioPreviewAnim();
+    });
+  });
+
+  studioModalEl.querySelector('#studio-fps-select')?.addEventListener('change', (e) => {
+    studioFps = parseInt(e.target.value, 10);
+    startStudioPreviewAnim();
+  });
+
+  studioModalEl.querySelector('#studio-scale-select')?.addEventListener('change', (e) => {
+    studioScale = parseInt(e.target.value, 10);
+    renderStudioPreviewFrame();
+  });
+
+  studioModalEl.querySelector('#btn-export-studio-action')?.addEventListener('click', () => {
+    if (!currentState || !currentState.frames || currentState.frames.length === 0) return;
+
+    if (studioFormat === 'gif') {
+      downloadAnimatedGif(currentState.frames, currentState.gridSize, studioFps, studioScale);
+    } else if (studioFormat === 'webp') {
+      downloadAnimatedWebP(currentState.frames, currentState.gridSize, studioFps, studioScale);
+    } else if (studioFormat === 'mp4') {
+      downloadMp4Video(currentState.frames, currentState.gridSize, studioFps, studioScale);
+    } else if (studioFormat === 'spritesheet') {
+      downloadSpriteSheet(currentState.frames, currentState.gridSize, null, studioScale);
+    }
+  });
+}
+
+function updateStudioFormatUI() {
+  if (!studioModalEl) return;
+  const fmtBtns = studioModalEl.querySelectorAll('.save-modal__fmt-btn');
+  fmtBtns.forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.sfmt === studioFormat);
+  });
+
+  const labelEl = studioModalEl.querySelector('#studio-export-fmt-label');
+  if (labelEl) {
+    labelEl.textContent = studioFormat.toUpperCase();
+  }
+}
+
+function startStudioPreviewAnim() {
+  if (studioAnimTimer) clearInterval(studioAnimTimer);
+  studioPreviewFrameIdx = 0;
+
+  renderStudioPreviewFrame();
+
+  const intervalMs = Math.round(1000 / Math.max(1, studioFps));
+  studioAnimTimer = setInterval(() => {
+    if (!currentState || !currentState.frames || currentState.frames.length === 0) return;
+    studioPreviewFrameIdx = (studioPreviewFrameIdx + 1) % currentState.frames.length;
+    renderStudioPreviewFrame();
+  }, intervalMs);
+}
+
+function renderStudioPreviewFrame() {
+  if (!studioModalEl || !currentState || !currentState.frames) return;
+  const previewCanvas = studioModalEl.querySelector('#studio-preview-canvas');
+  const subInfo = studioModalEl.querySelector('#studio-preview-sub-info');
+  if (!previewCanvas) return;
+
+  const totalFrames = currentState.frames.length;
+  if (subInfo) {
+    subInfo.textContent = `${totalFrames} frame${totalFrames > 1 ? 's' : ''} @ ${studioFps} FPS`;
+  }
+
+  const ctx = previewCanvas.getContext('2d');
+  ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+  ctx.imageSmoothingEnabled = false;
+
+  if (studioFormat === 'spritesheet') {
+    // Draw full sprite sheet in preview
+    const count = totalFrames;
+    const itemWidth = Math.min(180 / count, 48);
+    previewCanvas.width = count * itemWidth;
+    previewCanvas.height = itemWidth;
+
+    currentState.frames.forEach((f, i) => {
+      const fc = gridToCanvas(f.grid, 2);
+      if (fc) {
+        ctx.drawImage(fc, i * itemWidth, 0, itemWidth, itemWidth);
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(i * itemWidth, 0, itemWidth, itemWidth);
+      }
+    });
+  } else {
+    previewCanvas.width = 192;
+    previewCanvas.height = 192;
+
+    drawCheckerboard(ctx, 192, 192);
+
+    const frame = currentState.frames[studioPreviewFrameIdx] || currentState.frames[0];
+    if (frame) {
+      const bg = (studioFormat === 'mp4') ? '#0d1017' : 'transparent';
+      const fc = gridToCanvas(frame.grid, 6, { background: bg });
+      if (fc) {
+        ctx.drawImage(fc, 0, 0, 192, 192);
+      }
+    }
+  }
+}
+
 function populateFrameDropdown() {
   const selectEl = modalEl.querySelector('#single-frame-select');
   if (!selectEl || !currentState) return;
@@ -340,9 +570,6 @@ function populateFrameDropdown() {
   `).join('');
 }
 
-/**
- * Populate multi-frame selection checklist.
- */
 function populateFrameChecklist() {
   const listEl = modalEl.querySelector('#multi-frame-list');
   if (!listEl || !currentState) return;
@@ -362,7 +589,6 @@ function populateFrameChecklist() {
     `;
   }).join('');
 
-  // Render tiny thumbnails for each frame in the checklist
   frames.forEach((f, i) => {
     const thumbCanvas = listEl.querySelector(`canvas[data-idx="${i}"]`);
     if (thumbCanvas) {
@@ -375,7 +601,6 @@ function populateFrameChecklist() {
     }
   });
 
-  // Attach checkbox toggle handlers
   const checkboxes = listEl.querySelectorAll('.multi-frame-cb');
   checkboxes.forEach(cb => {
     cb.addEventListener('change', () => {
@@ -390,9 +615,6 @@ function populateFrameChecklist() {
   });
 }
 
-/**
- * Update UI for format selection buttons (PNG, JPEG, BMP).
- */
 function updateFormatUI() {
   const fmtBtns = modalEl.querySelectorAll('.save-modal__fmt-btn');
   fmtBtns.forEach(btn => {
@@ -406,9 +628,6 @@ function updateFormatUI() {
   }
 }
 
-/**
- * Update active tab and visible panel.
- */
 function updateTabUI() {
   const tabs = modalEl.querySelectorAll('.save-modal__tab');
   tabs.forEach(tab => {
@@ -422,9 +641,6 @@ function updateTabUI() {
   if (panelMulti) panelMulti.hidden = currentTab !== 'multiple';
 }
 
-/**
- * Render canvas live previews.
- */
 function updatePreviews() {
   if (!modalEl || !currentState) return;
 
@@ -442,7 +658,6 @@ function updatePreviews() {
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
         ctx.imageSmoothingEnabled = false;
 
-        // Draw checkerboard if transparent
         if (currentFormat !== 'jpeg') {
           drawCheckerboard(ctx, previewCanvas.width, previewCanvas.height);
         } else {
@@ -456,7 +671,6 @@ function updatePreviews() {
       }
     }
   } else {
-    // Multi-frame Sprite Sheet Preview
     const previewCanvas = modalEl.querySelector('#multi-preview-canvas');
     if (previewCanvas && currentState.frames) {
       const indices = selectedFrameIndices.slice().sort((a, b) => a - b);
@@ -485,9 +699,6 @@ function updatePreviews() {
   }
 }
 
-/**
- * Draw background checkerboard pattern on preview canvas.
- */
 function drawCheckerboard(ctx, width, height) {
   const size = 12;
   for (let y = 0; y < height; y += size) {
