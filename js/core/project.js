@@ -31,7 +31,10 @@ import {
 import { Journal } from './journal.js';
 import { History } from '../canvas/history.js';
 
-const SLOT = 'project';
+export const SLOT_DEFAULT = 'project';
+export const SLOT_BLANK = 'project_blank';
+export const SLOT_IMAGE = 'project_image';
+
 const FORMAT_VERSION = 1;
 
 /**
@@ -42,7 +45,7 @@ const FORMAT_VERSION = 1;
  * let a user "undo" past the point they saved, into a state that no longer
  * matches anything on screen. Each restored frame gets a fresh History.
  */
-export function serialise({ frames, journal, gridSize, fps, loop, activeFrame }) {
+export function serialise({ frames, journal, gridSize, fps, loop, activeFrame, reference }) {
   return {
     v: FORMAT_VERSION,
     savedAt: Date.now(),
@@ -52,6 +55,11 @@ export function serialise({ frames, journal, gridSize, fps, loop, activeFrame })
     activeFrame: activeFrame ?? 0,
     frames: frames.map(f => ({ id: f.id, g: encodeGrid(f.grid) })),
     journal: journal ? encodeJournal(journal.entries) : null,
+    reference: reference && reference.grid ? {
+      g: encodeGrid(reference.grid),
+      palette: reference.palette || [],
+      options: reference.options || null,
+    } : null,
   };
 }
 
@@ -86,6 +94,19 @@ export function deserialise(data) {
       : 0;
   }
 
+  let reference = null;
+  if (data.reference && data.reference.g) {
+    const refGrid = decodeGrid(data.reference.g);
+    if (refGrid) {
+      reference = {
+        grid: refGrid,
+        palette: data.reference.palette || [],
+        options: data.reference.options || {},
+        image: null,
+      };
+    }
+  }
+
   return {
     frames,
     journal,
@@ -93,6 +114,7 @@ export function deserialise(data) {
     fps: data.fps ?? 12,
     loop: data.loop ?? true,
     activeFrame: Math.min(data.activeFrame ?? 0, frames.length - 1),
+    reference,
     savedAt: data.savedAt ?? null,
   };
 }
@@ -101,17 +123,17 @@ export function deserialise(data) {
  * Write to LocalStorage, degrading rather than failing.
  * @returns {{ ok, bytes, degraded, error }}
  */
-export function saveProject(state) {
+export function saveProject(state, slot = SLOT_BLANK) {
   const full = serialise(state);
   const bytes = measure(full);
 
-  if (rawSave(SLOT, full)) {
+  if (rawSave(slot, full)) {
     return { ok: true, bytes, degraded: false, error: null };
   }
 
   // Most likely the journal pushed it over. Drop it and keep the artwork.
   const withoutJournal = { ...full, journal: null, journalDropped: true };
-  if (rawSave(SLOT, withoutJournal)) {
+  if (rawSave(slot, withoutJournal)) {
     return {
       ok: true,
       bytes: measure(withoutJournal),
@@ -129,8 +151,11 @@ export function saveProject(state) {
 }
 
 /** Read and rebuild. Returns null when there is nothing saved or it is unusable. */
-export function loadProject() {
-  const raw = rawLoad(SLOT, null);
+export function loadProject(slot = SLOT_BLANK) {
+  let raw = rawLoad(slot, null);
+  if (!raw && slot === SLOT_BLANK) {
+    raw = rawLoad(SLOT_DEFAULT, null);
+  }
   if (!raw) return null;
   try {
     return deserialise(raw);
@@ -141,8 +166,11 @@ export function loadProject() {
 }
 
 /** Metadata without decoding the whole thing — for a "restore?" prompt. */
-export function peekProject() {
-  const raw = rawLoad(SLOT, null);
+export function peekProject(slot = SLOT_BLANK) {
+  let raw = rawLoad(slot, null);
+  if (!raw && slot === SLOT_BLANK) {
+    raw = rawLoad(SLOT_DEFAULT, null);
+  }
   if (!raw || !Array.isArray(raw.frames)) return null;
   return {
     frames: raw.frames.length,
@@ -153,8 +181,11 @@ export function peekProject() {
   };
 }
 
-export function clearProject() {
-  rawRemove(SLOT);
+export function clearProject(slot = SLOT_BLANK) {
+  rawRemove(slot);
+  if (slot === SLOT_BLANK) {
+    rawRemove(SLOT_DEFAULT);
+  }
 }
 
 /**
@@ -164,12 +195,12 @@ export function clearProject() {
  * project hundreds of times during a single drag. Debouncing collapses a
  * burst of edits into one write once the user pauses.
  */
-export function makeAutosave(getState, { delay = 1500, onResult = null } = {}) {
+export function makeAutosave(getState, { delay = 1500, onResult = null, slot = SLOT_BLANK } = {}) {
   let timer = null;
 
   const run = () => {
     timer = null;
-    const result = saveProject(getState());
+    const result = saveProject(getState(), slot);
     if (onResult) onResult(result);
   };
 

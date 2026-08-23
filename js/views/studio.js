@@ -14,6 +14,7 @@ import { computeStats, formatDuration } from '../animation/stats.js';
 import { pencil, eraser, fill, pick, drawLine } from '../canvas/tools.js';
 import { go, onEnter } from '../core/router.js';
 import { openStudioSaveModal } from './saveModal.js';
+import { scheduleAutosave } from './editor.js';
 
 const FPS_OPTIONS = [8, 12, 16, 24, 30];
 
@@ -324,6 +325,7 @@ function bindTransport() {
       state.loop = !state.loop;
       player.setLoop(state.loop);
       updateTransport();
+      scheduleAutosave();
     });
   }
 
@@ -412,6 +414,7 @@ function refreshAfterEdit() {
   if (btnUndo && frame) btnUndo.disabled = !frame.history.canUndo;
   const btnRedo = document.getElementById('btn-studio-redo');
   if (btnRedo && frame) btnRedo.disabled = !frame.history.canRedo;
+  scheduleAutosave();
 }
 
 function updateTransport() {
@@ -455,6 +458,7 @@ function buildFpsButtons() {
       player.setFps(fps);
       wrap.querySelectorAll('.fps').forEach(x => x.classList.toggle('is-active', x === b));
       updateStats();
+      scheduleAutosave();
     });
     wrap.appendChild(b);
   });

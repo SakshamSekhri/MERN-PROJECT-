@@ -33,18 +33,29 @@ import { Journal } from '../core/journal.js';
 import { History } from '../canvas/history.js';
 import { openReplay } from './replayOverlay.js';
 import { openSaveModal } from './saveModal.js';
+import { openResumeProjectModal } from './autosaveModal.js';
 
 import {
   saveProject, loadProject, peekProject, clearProject,
-  makeAutosave, describeAge,
+  makeAutosave, describeAge, SLOT_BLANK,
 } from '../core/project.js';
 import { formatBytes } from '../core/codec.js';
 
 let renderer, refRenderer, timeline;
 let painting = false;
 let lastCell = { x: -1, y: -1 };
+let activeSlot = SLOT_BLANK;
 
-export function initEditor() {
+export function scheduleAutosave() {
+  autosave?.schedule();
+}
+
+export function getActiveSlot() {
+  return activeSlot;
+}
+
+export function initEditor({ slot = SLOT_BLANK } = {}) {
+  activeSlot = slot;
   if (!state.frames || state.frames.length === 0) {
     state.frames = [makeFrame(state.gridSize)];
     state.activeFrame = 0;
@@ -281,6 +292,7 @@ function bindFrames() {
     btnEmpty.addEventListener('click', () => {
       const next = addFrame(state.frames, state.activeFrame, state.gridSize, 'empty');
       selectFrame(next);
+      scheduleAutosave();
     });
   }
 
@@ -289,6 +301,7 @@ function bindFrames() {
     btnDupe.addEventListener('click', () => {
       const next = addFrame(state.frames, state.activeFrame, state.gridSize, 'duplicate');
       selectFrame(next);
+      scheduleAutosave();
     });
   }
 
@@ -299,6 +312,7 @@ function bindFrames() {
       if (next === null) return;
       state.activeFrame = next;
       redraw();
+      scheduleAutosave();
     });
   }
 
@@ -319,6 +333,7 @@ function reorderFrame(from, to) {
   moveFrame(state.frames, from, to);
   state.activeFrame = state.frames.indexOf(wasActive);
   redraw();
+  scheduleAutosave();
 }
 
 function clearCanvas() {
@@ -752,6 +767,7 @@ function bindTopbar() {
         }
       }
       redraw();
+      scheduleAutosave();
     });
   }
 
@@ -776,13 +792,19 @@ function bindTopbar() {
 function doUndo() {
   const history = currentHistory();
   if (!history) return;
-  if (history.undo(currentGrid())) redraw();
+  if (history.undo(currentGrid())) {
+    redraw();
+    scheduleAutosave();
+  }
 }
 
 function doRedo() {
   const history = currentHistory();
   if (!history) return;
-  if (history.redo(currentGrid())) redraw();
+  if (history.redo(currentGrid())) {
+    redraw();
+    scheduleAutosave();
+  }
 }
 
 function bindColor() {
@@ -872,15 +894,16 @@ function snapshot() {
     fps: state.fps,
     loop: state.loop,
     activeFrame: state.activeFrame,
+    reference: state.reference,
   };
 }
 
 function bindPersistence() {
-  autosave = makeAutosave(snapshot, { delay: 1500, onResult: reportSave });
+  autosave = makeAutosave(snapshot, { delay: 1500, onResult: reportSave, slot: activeSlot });
 
   document.getElementById('btn-save')?.addEventListener('click', () => {
     openSaveModal(state, () => {
-      reportSave(saveProject(snapshot()));
+      reportSave(saveProject(snapshot(), activeSlot));
     });
   });
 
@@ -888,51 +911,78 @@ function bindPersistence() {
     // Destructive and not undoable, so it asks. Everything else in this app
     // is reversible; this is the one action that is not.
     if (!confirm('Start over? Your saved work will be deleted.')) return;
-    clearProject();
+    clearProject(activeSlot);
     journal.clear();
     state.frames = [makeFrame(state.gridSize)];
     state.activeFrame = 0;
+    state.reference = null;
     updateReplayButton();
     redraw();
     setSaveStatus('Cleared');
   });
 
-  // A closing tab must not lose the last few seconds of work.
-  window.addEventListener('beforeunload', () => autosave?.flush());
+  // Ensure autosave is written immediately on tab/window close, reload, navigation, or visibility change
+  const flushAll = () => autosave?.flush();
+  window.addEventListener('beforeunload', flushAll);
+  window.addEventListener('pagehide', flushAll);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushAll();
+  });
 
   offerRestore();
 }
 
 /**
- * Offer to restore rather than restoring silently.
- *
- * Auto-loading would overwrite a blank canvas the user deliberately opened.
- * The offer states what is there — frame count, size, age — so the choice is
- * informed rather than a guess.
+ * Offer to restore via a popup modal preview screen or the top restore bar.
  */
 function offerRestore() {
+  const peek = peekProject(activeSlot);
+  if (!peek) return;
+
+  // Pop up the Resume Previous Project modal preview screen
+  openResumeProjectModal({
+    peek,
+    slot: activeSlot,
+    onRestore: () => {
+      restoreSaved();
+      const bar = document.getElementById('restore-bar');
+      if (bar) bar.hidden = true;
+    },
+    onDismiss: () => {
+      const bar = document.getElementById('restore-bar');
+      if (bar) bar.hidden = true;
+    },
+  });
+
   const bar = document.getElementById('restore-bar');
-  const peek = peekProject();
-  if (!bar || !peek) return;
+  if (bar) {
+    const detail = document.getElementById('restore-detail');
+    if (detail) {
+      detail.textContent =
+        `${peek.frames} frame${peek.frames === 1 ? '' : 's'} · ${peek.gridSize}x${peek.gridSize} · ` +
+        `saved ${describeAge(peek.savedAt)} · ${formatBytes(peek.bytes)}`;
+    }
+    bar.hidden = false;
 
-  document.getElementById('restore-detail').textContent =
-    `${peek.frames} frame${peek.frames === 1 ? '' : 's'} · ${peek.gridSize}x${peek.gridSize} · ` +
-    `saved ${describeAge(peek.savedAt)} · ${formatBytes(peek.bytes)}`;
+    const btnRestore = document.getElementById('btn-restore');
+    if (btnRestore) {
+      btnRestore.onclick = () => {
+        restoreSaved();
+        bar.hidden = true;
+      };
+    }
 
-  bar.hidden = false;
-
-  document.getElementById('btn-restore')?.addEventListener('click', () => {
-    restoreSaved();
-    bar.hidden = true;
-  });
-
-  document.getElementById('btn-restore-dismiss')?.addEventListener('click', () => {
-    bar.hidden = true;      // dismiss only — the save stays on disk
-  });
+    const btnDismiss = document.getElementById('btn-restore-dismiss');
+    if (btnDismiss) {
+      btnDismiss.onclick = () => {
+        bar.hidden = true;      // dismiss only — the save stays on disk
+      };
+    }
+  }
 }
 
 function restoreSaved() {
-  const data = loadProject();
+  const data = loadProject(activeSlot);
   if (!data) { setSaveStatus('Nothing saved'); return; }
 
   state.frames = data.frames;

@@ -18,6 +18,7 @@ import { state } from '../core/state.js';
 import { imageToGrid, loadImageFromFile, releaseImage } from '../image/pixelate.js';
 import { drawThumbnail } from '../canvas/renderer.js';
 import { go } from '../core/router.js';
+import { scheduleAutosave } from './editor.js';
 
 let sourceImage = null;
 let result = null;          // { grid, palette, colorsBefore } — null until converted
@@ -259,6 +260,7 @@ function bindActions() {
         sizeSelect.dispatchEvent(new Event('change'));
       }
       go('editor');
+      scheduleAutosave();
     });
   }
 
