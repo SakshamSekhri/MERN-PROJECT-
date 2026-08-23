@@ -32,6 +32,7 @@ import { playForgeTransition } from './forgeLoader.js';
 import { Journal } from '../core/journal.js';
 import { History } from '../canvas/history.js';
 import { openReplay } from './replayOverlay.js';
+import { openSaveModal } from './saveModal.js';
 
 import {
   saveProject, loadProject, peekProject, clearProject,
@@ -878,10 +879,10 @@ function bindPersistence() {
   autosave = makeAutosave(snapshot, { delay: 1500, onResult: reportSave });
 
   document.getElementById('btn-save')?.addEventListener('click', () => {
-    reportSave(saveProject(snapshot()));
+    openSaveModal(state, () => {
+      reportSave(saveProject(snapshot()));
+    });
   });
-
-  document.getElementById('btn-load')?.addEventListener('click', restoreSaved);
 
   document.getElementById('btn-new')?.addEventListener('click', () => {
     // Destructive and not undoable, so it asks. Everything else in this app
