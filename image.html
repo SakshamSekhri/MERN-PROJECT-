@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/views/reference.css" />
 <link rel="stylesheet" href="css/components/forgeLoader.css" />
 <link rel="stylesheet" href="css/components/replay.css" />
+<link rel="stylesheet" href="css/components/save.css" />
 
 </head>
 <body>
@@ -27,6 +28,13 @@
     <a href="index.html" class="topbar__brand">PIXEL<span class="logo__accent">VERSE</span></a>
     <span class="topbar__crumb">/ REFERENCE</span>
   </header>
+
+    <div class="restore-bar" id="restore-bar" hidden>
+    <span class="restore-bar__label">Unsaved session found</span>
+    <span class="restore-bar__detail" id="restore-detail"></span>
+    <button class="btn btn--lime btn--sm" id="btn-restore">Restore</button>
+    <button class="btn btn--ghost btn--sm" id="btn-restore-dismiss">Dismiss</button>
+  </div>
 
   <main class="reference">
 
@@ -157,6 +165,10 @@
 
     <button class="btn btn--ghost" id="btn-grid-lines">Grid lines</button>
     <button class="btn btn--lime" id="btn-replay" disabled>Replay <span id="replay-count">0</span></button>
+    <button class="btn btn--ghost" id="btn-save" title="Save to this browser">Save</button>
+    <button class="btn btn--ghost" id="btn-load" title="Load the last save">Load</button>
+    <button class="btn btn--danger" id="btn-new" title="Delete the save and start over">New</button>
+    <span class="save-status" id="save-status"></span>
   </header>
 
   <main class="editor">

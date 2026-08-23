@@ -1,0 +1,200 @@
+/**
+ * Project persistence — save and restore the whole working state.
+ *
+ * Two things are saved, and both matter:
+ *
+ *   frames   the artwork
+ *   journal  how it was made — the delta log that powers replay
+ *
+ * Saving only the frames would silently throw away the replay. The brief is
+ * explicit that LocalStorage holds the delta history array, so the journal is
+ * a first-class part of the save, not a nice-to-have.
+ *
+ * ── Quota is a real failure mode, not a theoretical one ──
+ *
+ * LocalStorage caps around 5 MB and throws QuotaExceededError on overflow.
+ * Losing an hour of drawing because a save silently failed is the worst
+ * outcome this module can produce, so writes degrade in steps rather than
+ * failing outright:
+ *
+ *   1. frames + journal          (everything)
+ *   2. frames only               (replay lost, artwork safe)
+ *   3. report failure to the UI  (nothing written, user told)
+ *
+ * The artwork is always the last thing sacrificed.
+ */
+
+import { save as rawSave, load as rawLoad, remove as rawRemove } from './storage.js';
+import {
+  encodeGrid, decodeGrid, encodeJournal, decodeJournal, measure,
+} from './codec.js';
+import { Journal } from './journal.js';
+import { History } from '../canvas/history.js';
+
+const SLOT = 'project';
+const FORMAT_VERSION = 1;
+
+/**
+ * Build the saveable object.
+ *
+ * Frames are encoded; History objects are deliberately NOT saved. An undo
+ * stack is a live editing artifact — restoring yesterday's undo history would
+ * let a user "undo" past the point they saved, into a state that no longer
+ * matches anything on screen. Each restored frame gets a fresh History.
+ */
+export function serialise({ frames, journal, gridSize, fps, loop, activeFrame }) {
+  return {
+    v: FORMAT_VERSION,
+    savedAt: Date.now(),
+    gridSize,
+    fps: fps ?? 12,
+    loop: loop ?? true,
+    activeFrame: activeFrame ?? 0,
+    frames: frames.map(f => ({ id: f.id, g: encodeGrid(f.grid) })),
+    journal: journal ? encodeJournal(journal.entries) : null,
+  };
+}
+
+/**
+ * Rebuild state from a saved object.
+ *
+ * Every field is defended. Saved data can be truncated by a failed write,
+ * left behind by an older version of the app, or edited by hand in devtools.
+ * A partially readable project is worth far more than a thrown exception.
+ */
+export function deserialise(data) {
+  if (!data || !Array.isArray(data.frames)) return null;
+
+  const frames = [];
+  for (const entry of data.frames) {
+    const grid = decodeGrid(entry?.g);
+    if (!grid) continue;                       // skip corrupt frames, keep the rest
+    frames.push({
+      id: entry.id ?? frames.length + 1,
+      grid,
+      history: new History(),                  // fresh — see note in serialise()
+    });
+  }
+
+  if (frames.length === 0) return null;
+
+  const journal = new Journal();
+  if (data.journal) {
+    journal.entries = decodeJournal(data.journal);
+    journal.seq = journal.entries.length
+      ? Math.max(...journal.entries.map(e => e.seq ?? 0)) + 1
+      : 0;
+  }
+
+  return {
+    frames,
+    journal,
+    gridSize: data.gridSize ?? frames[0].grid.length,
+    fps: data.fps ?? 12,
+    loop: data.loop ?? true,
+    activeFrame: Math.min(data.activeFrame ?? 0, frames.length - 1),
+    savedAt: data.savedAt ?? null,
+  };
+}
+
+/**
+ * Write to LocalStorage, degrading rather than failing.
+ * @returns {{ ok, bytes, degraded, error }}
+ */
+export function saveProject(state) {
+  const full = serialise(state);
+  const bytes = measure(full);
+
+  if (rawSave(SLOT, full)) {
+    return { ok: true, bytes, degraded: false, error: null };
+  }
+
+  // Most likely the journal pushed it over. Drop it and keep the artwork.
+  const withoutJournal = { ...full, journal: null, journalDropped: true };
+  if (rawSave(SLOT, withoutJournal)) {
+    return {
+      ok: true,
+      bytes: measure(withoutJournal),
+      degraded: true,
+      error: 'Replay history was too large to save — your artwork was saved.',
+    };
+  }
+
+  return {
+    ok: false,
+    bytes,
+    degraded: false,
+    error: 'Not enough storage space. Try fewer frames or a smaller grid.',
+  };
+}
+
+/** Read and rebuild. Returns null when there is nothing saved or it is unusable. */
+export function loadProject() {
+  const raw = rawLoad(SLOT, null);
+  if (!raw) return null;
+  try {
+    return deserialise(raw);
+  } catch (err) {
+    console.warn('[project] saved data unreadable', err);
+    return null;
+  }
+}
+
+/** Metadata without decoding the whole thing — for a "restore?" prompt. */
+export function peekProject() {
+  const raw = rawLoad(SLOT, null);
+  if (!raw || !Array.isArray(raw.frames)) return null;
+  return {
+    frames: raw.frames.length,
+    gridSize: raw.gridSize ?? null,
+    savedAt: raw.savedAt ?? null,
+    hasJournal: Boolean(raw.journal),
+    bytes: measure(raw),
+  };
+}
+
+export function clearProject() {
+  rawRemove(SLOT);
+}
+
+/**
+ * Debounced autosave.
+ *
+ * Saving on every committed delta would serialise and stringify the entire
+ * project hundreds of times during a single drag. Debouncing collapses a
+ * burst of edits into one write once the user pauses.
+ */
+export function makeAutosave(getState, { delay = 1500, onResult = null } = {}) {
+  let timer = null;
+
+  const run = () => {
+    timer = null;
+    const result = saveProject(getState());
+    if (onResult) onResult(result);
+  };
+
+  return {
+    schedule() {
+      if (timer !== null) clearTimeout(timer);
+      timer = setTimeout(run, delay);
+    },
+    /** Force an immediate write — used on page unload. */
+    flush() {
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      run();
+    },
+    cancel() {
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+    },
+  };
+}
+
+/** "just now", "4 min ago", "2 h ago" — for the save readout. */
+export function describeAge(timestamp) {
+  if (!timestamp) return 'never';
+  const secs = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+  if (secs < 10) return 'just now';
+  if (secs < 60) return `${secs}s ago`;
+  if (secs < 3600) return `${Math.round(secs / 60)} min ago`;
+  return `${Math.round(secs / 3600)} h ago`;
+}

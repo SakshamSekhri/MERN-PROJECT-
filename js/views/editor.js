@@ -33,6 +33,12 @@ import { Journal } from '../core/journal.js';
 import { History } from '../canvas/history.js';
 import { openReplay } from './replayOverlay.js';
 
+import {
+  saveProject, loadProject, peekProject, clearProject,
+  makeAutosave, describeAge,
+} from '../core/project.js';
+import { formatBytes } from '../core/codec.js';
+
 let renderer, refRenderer, timeline;
 let painting = false;
 let lastCell = { x: -1, y: -1 };
@@ -56,6 +62,7 @@ export function initEditor() {
   bindKeyboard();
   bindTopbar();
   bindJournal();
+  bindPersistence();
 
   buildPalette();
   renderRecent();
@@ -830,6 +837,7 @@ function bindJournal() {
     const frame = state.frames?.[state.activeFrame];
     journal.push(step, frame?.id ?? 0);
     updateReplayButton();
+    autosave?.schedule();          // debounced — see makeAutosave()
   };
 
   const btn = document.getElementById('btn-replay');
@@ -847,4 +855,114 @@ function updateReplayButton() {
   btn.disabled = journal.isEmpty;
   const count = document.getElementById('replay-count');
   if (count) count.textContent = journal.length;
+}
+
+
+/* ─────────────── persistence ─────────────── */
+
+let autosave = null;
+
+/** The slice of state worth saving. Renderers and DOM are rebuilt on load. */
+function snapshot() {
+  return {
+    frames: state.frames ?? [],
+    journal,
+    gridSize: state.gridSize,
+    fps: state.fps,
+    loop: state.loop,
+    activeFrame: state.activeFrame,
+  };
+}
+
+function bindPersistence() {
+  autosave = makeAutosave(snapshot, { delay: 1500, onResult: reportSave });
+
+  document.getElementById('btn-save')?.addEventListener('click', () => {
+    reportSave(saveProject(snapshot()));
+  });
+
+  document.getElementById('btn-load')?.addEventListener('click', restoreSaved);
+
+  document.getElementById('btn-new')?.addEventListener('click', () => {
+    // Destructive and not undoable, so it asks. Everything else in this app
+    // is reversible; this is the one action that is not.
+    if (!confirm('Start over? Your saved work will be deleted.')) return;
+    clearProject();
+    journal.clear();
+    state.frames = [makeFrame(state.gridSize)];
+    state.activeFrame = 0;
+    updateReplayButton();
+    redraw();
+    setSaveStatus('Cleared');
+  });
+
+  // A closing tab must not lose the last few seconds of work.
+  window.addEventListener('beforeunload', () => autosave?.flush());
+
+  offerRestore();
+}
+
+/**
+ * Offer to restore rather than restoring silently.
+ *
+ * Auto-loading would overwrite a blank canvas the user deliberately opened.
+ * The offer states what is there — frame count, size, age — so the choice is
+ * informed rather than a guess.
+ */
+function offerRestore() {
+  const bar = document.getElementById('restore-bar');
+  const peek = peekProject();
+  if (!bar || !peek) return;
+
+  document.getElementById('restore-detail').textContent =
+    `${peek.frames} frame${peek.frames === 1 ? '' : 's'} · ${peek.gridSize}x${peek.gridSize} · ` +
+    `saved ${describeAge(peek.savedAt)} · ${formatBytes(peek.bytes)}`;
+
+  bar.hidden = false;
+
+  document.getElementById('btn-restore')?.addEventListener('click', () => {
+    restoreSaved();
+    bar.hidden = true;
+  });
+
+  document.getElementById('btn-restore-dismiss')?.addEventListener('click', () => {
+    bar.hidden = true;      // dismiss only — the save stays on disk
+  });
+}
+
+function restoreSaved() {
+  const data = loadProject();
+  if (!data) { setSaveStatus('Nothing saved'); return; }
+
+  state.frames = data.frames;
+  state.activeFrame = data.activeFrame;
+  state.gridSize = data.gridSize;
+  state.fps = data.fps;
+  state.loop = data.loop;
+
+  journal.clear();
+  journal.entries = data.journal.entries;
+  journal.seq = data.journal.seq;
+
+  const sizeSelect = document.getElementById('grid-size');
+  if (sizeSelect) sizeSelect.value = String(state.gridSize);
+
+  updateReplayButton();
+  redraw();
+  setSaveStatus(`Restored · saved ${describeAge(data.savedAt)}`);
+}
+
+function reportSave(result) {
+  if (!result) return;
+  if (!result.ok) { setSaveStatus(result.error, 'error'); return; }
+  if (result.degraded) { setSaveStatus(result.error, 'warn'); return; }
+  setSaveStatus(`Saved · ${formatBytes(result.bytes)}`);
+}
+
+function setSaveStatus(text, tone = 'ok') {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('is-error', tone === 'error');
+  el.classList.toggle('is-warn', tone === 'warn');
 }

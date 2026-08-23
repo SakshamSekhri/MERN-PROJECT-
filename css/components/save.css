@@ -1,0 +1,44 @@
+/* ═══════════════════════════════════════════════
+   Save / restore controls
+   ═══════════════════════════════════════════════ */
+
+.save-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-mute);
+  letter-spacing: .04em;
+  white-space: nowrap;
+  min-width: 90px;
+}
+.save-status.is-warn  { color: var(--gold); }
+.save-status.is-error { color: var(--danger); }
+
+/* ── restore prompt ── */
+.restore-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s2) var(--s4);
+  background: color-mix(in srgb, var(--lime) 12%, var(--panel));
+  border-bottom: var(--border) solid var(--lime);
+}
+
+.restore-bar__label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--lime);
+}
+
+.restore-bar__detail {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: .04em;
+  margin-right: auto;
+}
+
+@media (max-width: 700px) {
+  .save-status { display: none; }
+  .restore-bar__detail { width: 100%; margin-right: 0; }
+}
