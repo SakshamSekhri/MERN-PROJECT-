@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>PixelVerse — Blank Canvas</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fira+Sans:wght@400;500;600&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css">
 
 <link rel="stylesheet" href="css/base.css" />
 <link rel="stylesheet" href="css/components.css" />
@@ -16,6 +17,7 @@
 <link rel="stylesheet" href="css/components/forgeLoader.css" />
 <link rel="stylesheet" href="css/components/replay.css" />
 <link rel="stylesheet" href="css/components/save.css" />
+<link rel="stylesheet" href="css/tablet.css" />
 
 </head>
 <body>
@@ -29,7 +31,6 @@
     <span class="topbar__crumb">/ CANVAS</span>
 
     <div class="topbar__spacer"></div>
-
 
     <label class="field">
       <span class="field__label">Grid</span>
@@ -49,8 +50,6 @@
     <a href="image.html" class="btn btn--cyan" id="btn-create-image">Create from image</a>
     <button class="btn btn--violet" id="btn-studio">Pixelverse studio</button>
   </header>
-
-    </header>
 
   <div class="restore-bar" id="restore-bar" hidden>
     <span class="restore-bar__label">Unsaved session found</span>
@@ -245,6 +244,16 @@
 
     <div class="topbar__spacer"></div>
 
+    <label class="field">
+      <span class="field__label">Grid</span>
+      <select id="studio-grid-size" class="select">
+        <option value="16">16 × 16</option>
+        <option value="32" selected>32 × 32</option>
+        <option value="64">64 × 64</option>
+        <option value="128">128 × 128</option>
+      </select>
+    </label>
+
     <button class="btn btn--gold" id="btn-studio-save" title="Save options & export animation">Save</button>
   </header>
 
@@ -302,6 +311,8 @@
       <button class="btn btn--play" id="btn-play">▶  Play</button>
       <button class="btn btn--step" id="btn-next" title="Next frame">⏭</button>
       <button class="btn btn--ghost" id="btn-loop">🔁  Loop on</button>
+      <button class="btn btn--ghost" id="btn-studio-onion" title="Toggle onion skin ghosting of previous frames">🧅 Onion skin</button>
+      <button class="btn btn--ghost" id="btn-studio-grid-lines" title="Toggle canvas grid lines">Grid lines</button>
     </div>
 
     <div class="fps-bar">
@@ -314,6 +325,7 @@
       <div class="studio-strip__head">
         <p class="rail__heading">Sequence</p>
         <div class="studio-strip__actions">
+          <button class="btn btn--ghost btn--sm" id="btn-studio-empty" title="Add an empty frame after this one">+ Empty</button>
           <button class="btn btn--violet btn--sm" id="btn-studio-dupe">Duplicate</button>
           <button class="btn btn--danger btn--sm" id="btn-studio-delete" disabled>Delete</button>
         </div>

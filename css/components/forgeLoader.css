@@ -11,8 +11,8 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(1100px 700px at 50% 35%, #1d1036 0%, #0c0618 60%, #04020a 100%);
-  color: var(--ink);
+    radial-gradient(1100px 700px at 50% 35%, #1a2136 0%, #111625 60%, #050508 100%);
+  color: var(--pv-text);
   overflow: hidden;
   opacity: 1;
   transition: opacity 0.4s ease-out;
@@ -104,8 +104,8 @@
 .forge-line-1 {
   display: flex;
   gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 26px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.10em;
 }
@@ -114,15 +114,15 @@
   display: inline-block;
   width: 22px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.08);
-  border-bottom: 3px solid rgba(255, 255, 255, 0.12);
+  color: rgba(238, 241, 245, 0.1);
+  border-bottom: 3px solid rgba(238, 241, 245, 0.15);
   transition: color 0.15s ease, border-color 0.15s ease, text-shadow 0.15s ease;
 }
 
 .forge-line-1 .char.forged {
-  color: #ffd700;
-  border-bottom-color: #ffd700;
-  text-shadow: 0 0 16px rgba(255, 215, 0, 0.9), 0 0 32px rgba(255, 140, 0, 0.6);
+  color: var(--pv-sun);
+  border-bottom-color: var(--pv-sun-lit);
+  text-shadow: 0 0 16px rgba(232, 141, 48, 0.9), 0 0 32px rgba(247, 180, 94, 0.6);
   animation: char-pop 0.22s cubic-bezier(0.17, 0.89, 0.32, 1.28) both;
 }
 
@@ -130,8 +130,8 @@
 .forge-line-2 {
   display: flex;
   gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 24px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.24em;
 }
@@ -140,15 +140,15 @@
   display: inline-block;
   width: 22px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.06);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.10);
+  color: rgba(238, 241, 245, 0.08);
+  border-bottom: 2px solid rgba(238, 241, 245, 0.12);
   transition: color 0.15s ease, border-color 0.15s ease, text-shadow 0.15s ease;
 }
 
 .forge-line-2 .char.forged {
-  color: #22d3ee;
-  border-bottom-color: #22d3ee;
-  text-shadow: 0 0 16px rgba(34, 211, 238, 0.9), 0 0 28px rgba(168, 85, 247, 0.6);
+  color: var(--pv-magenta);
+  border-bottom-color: var(--pv-magenta-lit);
+  text-shadow: 0 0 16px rgba(217, 43, 180, 0.9), 0 0 28px rgba(255, 111, 220, 0.6);
   animation: char-pop 0.22s cubic-bezier(0.17, 0.89, 0.32, 1.28) both;
 }
 
@@ -159,9 +159,10 @@
 }
 
 .forge-footer-tag {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-mute);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--pv-muted);
   letter-spacing: 0.18em;
-  opacity: 0.75;
+  opacity: 0.85;
 }
+

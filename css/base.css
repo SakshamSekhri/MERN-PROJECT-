@@ -1,37 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fira+Sans:wght@400;500;600&family=Press+Start+2P&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css');
 
 :root {
-  /* surfaces — warm purple-black, never neutral grey */
-  --void:      #12101c;
-  --void-2:    #171424;
-  --panel:     #1e1a2e;
-  --panel-hi:  #2a2440;
-  --line:      #372f52;
+  /* PixelVerse Color System — Source of Truth from index.html */
+  --pv-sky:         #111625;
+  --pv-sky-2:       #1a2136;
+  --pv-stone-dk:    #1c282e;
+  --pv-stone:       #283a42;
+  --pv-moss:        #4a6b46;
+  --pv-sun:         #e88d30;
+  --pv-sun-lit:     #f7b45e;
+  --pv-text:        #eef1f5;
+  --pv-muted:       #93a0ad;
+  --pv-void:        #050508;
+  --pv-magenta:     #d92bb4;
+  --pv-magenta-lit: #ff6fdc;
+  --pv-ink:         #0d1017;
 
-  /* text */
-  --ink:       #e8e4f5;
-  --ink-dim:   #a79ec7;
-  --ink-mute:  #6f668f;
+  /* Aliases for component & editor compatibility */
+  --void:      var(--pv-void);
+  --void-2:    #0e121d;
+  --panel:     var(--pv-stone-dk);
+  --panel-hi:  var(--pv-stone);
+  --line:      var(--pv-ink);
 
-  /* tool identity colours — each tool owns one */
-  --hot:       #ff2e88;   /* pencil / primary action */
-  --cyan:      #22d3ee;   /* reference / eraser   */
-  --lime:      #a3e635;   /* fill / success      */
-  --gold:      #fbbf24;   /* picker / indicators */
-  --violet:    #a855f7;   /* animation / studio  */
-  --danger:    #f43f5e;
+  --ink:       var(--pv-text);
+  --ink-dim:   var(--pv-muted);
+  --ink-mute:  #6c7a88;
 
-  /* type */
-  --font-display: 'Silkscreen', 'Press Start 2P', monospace;
-  --font-body:    'Space Grotesk', system-ui, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  /* Tool identity colors mapped to PixelVerse palette */
+  --hot:       var(--pv-sun);        /* Pencil / Orange */
+  --cyan:      #38bdf8;              /* Reference / Cyan accent */
+  --lime:      var(--pv-moss);       /* Moss Green success */
+  --gold:      var(--pv-sun-lit);    /* Warm Highlight */
+  --violet:    var(--pv-magenta);    /* Studio / Pro Magenta */
+  --danger:    #e54d42;
 
-  /* geometry — hard edges only, this is a pixel tool */
+  /* Fonts */
+  --font-display: 'Press Start 2P', monospace;
+  --font-h:       'Space Grotesk', sans-serif;
+  --font-body:    'Fira Sans', sans-serif;
+  --font-mono:    'Press Start 2P', monospace;
+
+  /* Geometry & Borders */
   --radius: 0px;
   --border: 2px;
 
-  /* spacing scale */
+  /* Spacing */
   --s1: 4px;  --s2: 8px;  --s3: 12px;
   --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
 }
@@ -46,8 +61,20 @@ html, body {
 }
 
 body {
-  background: var(--void);
-  color: var(--ink);
+  background:
+    radial-gradient(
+        circle at 50% 0%,
+        rgba(247, 180, 94, 0.08),
+        transparent 35%
+    ),
+    linear-gradient(
+        180deg,
+        #111625 0%,
+        #1a2136 55%,
+        #0d1017 100%
+    );
+  background-attachment: fixed;
+  color: var(--pv-text);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.5;
@@ -56,20 +83,24 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  font-family: var(--font-h);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0;
 }
+
+.pv-h { font-family: 'Space Grotesk', sans-serif; }
+.pv-hud { font-family: 'Press Start 2P', monospace; }
 
 button, select, input { font-family: inherit; color: inherit; }
 
 kbd {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-mute);
-  border: 1px solid var(--line);
-  padding: 1px 4px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--pv-muted);
+  border: 1px solid var(--pv-ink);
+  background: var(--pv-void);
+  padding: 2px 4px;
   margin-left: auto;
 }
 
@@ -83,23 +114,24 @@ kbd {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--void);
+  background: var(--pv-void);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--line);
+  background: var(--pv-stone);
+  border: 1px solid var(--pv-ink);
   border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--hot);
+  background: var(--pv-sun);
 }
 
 /* ── pixel utilities ── */
-.stk { border: var(--border) solid var(--line); box-shadow: 6px 6px 0 #000; }
-.stk-sm { border: var(--border) solid var(--line); box-shadow: 4px 4px 0 #000; }
+.stk { border: 2px solid var(--pv-ink); box-shadow: 6px 6px 0 var(--pv-ink); }
+.stk-sm { border: 2px solid var(--pv-ink); box-shadow: 4px 4px 0 var(--pv-ink); }
 
 /* ── accessibility floor ── */
 :focus-visible {
-  outline: var(--border) solid var(--gold);
+  outline: 2px solid var(--pv-sun);
   outline-offset: 2px;
 }
 
@@ -109,4 +141,4 @@ kbd {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
+}

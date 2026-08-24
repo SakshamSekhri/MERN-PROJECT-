@@ -103,6 +103,6 @@
 .choice--soon .choice__icon { color: var(--ink-mute); }
 .choice--soon .choice__go   { color: var(--ink-mute); }
 
-@media (max-width: 600px) {
+@media (max-width: 620px) {
   .choice-grid { grid-template-columns: 1fr; }
 }

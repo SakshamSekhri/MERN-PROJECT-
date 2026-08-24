@@ -72,6 +72,7 @@ export function initEditor({ slot = SLOT_BLANK } = {}) {
   bindTools();
   if (canvas) bindPointer(canvas);
   bindKeyboard();
+  bindHistory();
   bindTopbar();
   bindJournal();
   bindPersistence();
@@ -742,12 +743,12 @@ function stroke(x, y) {
 /* ─────────────── topbar ─────────────── */
 
 function bindTopbar() {
-  const homeBtn = document.querySelector('[data-action="home"]');
-  if (homeBtn) {
-    homeBtn.addEventListener('click', () => {
+  document.querySelectorAll('.topbar__brand, [data-action="home"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
       window.location.href = 'index.html';
     });
-  }
+  });
 
   const sizeSelect = document.getElementById('grid-size');
   if (sizeSelect) {
@@ -804,6 +805,22 @@ function doRedo() {
   if (history.redo(currentGrid())) {
     redraw();
     scheduleAutosave();
+  }
+}
+
+function bindHistory() {
+  const btnUndo = document.getElementById('btn-undo');
+  if (btnUndo) {
+    btnUndo.addEventListener('click', () => {
+      doUndo();
+    });
+  }
+
+  const btnRedo = document.getElementById('btn-redo');
+  if (btnRedo) {
+    btnRedo.addEventListener('click', () => {
+      doRedo();
+    });
   }
 }
 

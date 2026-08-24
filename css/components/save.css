@@ -3,14 +3,14 @@
    ═══════════════════════════════════════════════ */
 
 .save-status {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-mute);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--pv-muted);
   letter-spacing: .04em;
   white-space: nowrap;
   min-width: 90px;
 }
-.save-status.is-warn  { color: var(--gold); }
+.save-status.is-warn  { color: var(--pv-sun-lit); }
 .save-status.is-error { color: var(--danger); }
 
 /* ── restore prompt ── */
@@ -19,26 +19,27 @@
   align-items: center;
   gap: var(--s3);
   flex-wrap: wrap;
-  padding: var(--s2) var(--s4);
-  background: color-mix(in srgb, var(--lime) 12%, var(--panel));
-  border-bottom: var(--border) solid var(--lime);
+  padding: 10px 16px;
+  background: var(--pv-stone-dk);
+  border-bottom: 2px solid var(--pv-moss);
+  box-shadow: 0 4px 0 var(--pv-ink);
 }
 
 .restore-bar__label {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--lime);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #5c8154;
+  letter-spacing: 0.05em;
 }
 
 .restore-bar__detail {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-dim);
-  letter-spacing: .04em;
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 13px;
+  color: var(--pv-muted);
   margin-right: auto;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 700px) {
   .save-status { display: none; }
   .restore-bar__detail { width: 100%; margin-right: 0; }
 }
@@ -64,7 +65,7 @@ body.is-modal-open {
 .save-modal__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(6, 5, 14, 0.88);
+  background: rgba(5, 5, 8, 0.88);
   backdrop-filter: blur(4px);
 }
 
@@ -75,10 +76,10 @@ body.is-modal-open {
   max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
-  background: var(--panel);
-  border: var(--border) solid var(--lime);
-  box-shadow: 0 0 0 6px #0006, 0 20px 60px #000a;
-  padding: var(--s4);
+  background: var(--pv-stone-dk);
+  border: 2px solid var(--pv-ink);
+  box-shadow: 8px 8px 0 var(--pv-ink), 0 0 40px rgba(0, 0, 0, 0.6);
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: var(--s4);
@@ -88,50 +89,55 @@ body.is-modal-open {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  border-bottom: var(--border) solid var(--line);
+  border-bottom: 2px solid var(--pv-ink);
   padding-bottom: var(--s3);
 }
 
 .save-modal__title {
-  font-family: var(--font-display);
-  font-size: 15px;
-  color: var(--lime);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  color: var(--pv-sun-lit);
   margin: 0;
   letter-spacing: 0.05em;
 }
 
 .save-modal__sub {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-mute);
-  margin-top: 2px;
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 13px;
+  color: var(--pv-muted);
+  margin-top: 4px;
   display: block;
 }
 
 .save-modal__close {
-  background: transparent;
-  border: var(--border) solid var(--line);
-  color: var(--ink-dim);
-  width: 28px;
-  height: 28px;
-  font-size: 18px;
+  background: var(--pv-stone);
+  border: 2px solid var(--pv-ink);
+  color: var(--pv-text);
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 2px 2px 0 var(--pv-ink);
+  transition: transform 0.08s, box-shadow 0.08s;
 }
 
 .save-modal__close:hover {
   border-color: var(--danger);
   color: var(--danger);
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--pv-ink);
 }
 
 .save-modal__status-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: color-mix(in srgb, var(--lime) 10%, var(--panel-hi));
-  border: var(--border) solid var(--lime);
+  background: var(--pv-stone);
+  border: 2px solid var(--pv-ink);
+  box-shadow: 4px 4px 0 var(--pv-ink);
   padding: var(--s3);
   gap: var(--s3);
 }
@@ -144,19 +150,20 @@ body.is-modal-open {
 
 .save-modal__status-icon {
   font-size: 18px;
+  color: var(--pv-moss);
 }
 
 .save-modal__status-label {
   display: block;
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--lime);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--pv-sun-lit);
 }
 
 .save-modal__status-time {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-dim);
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 13px;
+  color: var(--pv-muted);
 }
 
 .save-modal__section {
@@ -172,16 +179,16 @@ body.is-modal-open {
 }
 
 .save-modal__section-title {
-  font-family: var(--font-display);
-  font-size: 13px;
-  color: var(--cyan);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--pv-sun-lit);
   letter-spacing: 0.04em;
 }
 
 .save-modal__section-hint {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-mute);
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 12px;
+  color: var(--pv-muted);
 }
 
 .save-modal__tabs {
@@ -191,11 +198,12 @@ body.is-modal-open {
 }
 
 .save-modal__tab {
-  background: var(--panel-hi);
-  border: var(--border) solid var(--line);
+  background: var(--pv-stone);
+  border: 2px solid var(--pv-ink);
+  box-shadow: 4px 4px 0 var(--pv-ink);
   padding: var(--s3);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.12s ease;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -205,9 +213,10 @@ body.is-modal-open {
 
 .save-modal__tab:hover,
 .save-modal__tab.is-active {
-  border-color: var(--cyan);
-  background: color-mix(in srgb, var(--cyan) 12%, var(--panel-hi));
-  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15);
+  border-color: var(--pv-sun);
+  background: #23333b;
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--pv-ink);
 }
 
 .save-modal__tab-header {
@@ -218,19 +227,20 @@ body.is-modal-open {
 
 .save-modal__tab-icon {
   font-size: 20px;
+  color: var(--pv-sun);
 }
 
 .save-modal__tab-info strong {
   display: block;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  color: var(--pv-text);
 }
 
 .save-modal__tab-info span {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--ink-mute);
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 12px;
+  color: var(--pv-muted);
 }
 
 .save-modal__tab-badges {
@@ -240,25 +250,26 @@ body.is-modal-open {
 }
 
 .save-modal__badge {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  padding: 2px 6px;
-  background: color-mix(in srgb, var(--cyan) 20%, transparent);
-  border: 1px solid var(--cyan);
-  color: var(--cyan);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 3px 6px;
+  background: var(--pv-stone-dk);
+  border: 1px solid var(--pv-ink);
+  color: var(--pv-sun-lit);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .save-modal__badge--lime {
-  background: color-mix(in srgb, var(--lime) 20%, transparent);
-  border-color: var(--lime);
-  color: var(--lime);
+  background: #1e2c1d;
+  border-color: var(--pv-ink);
+  color: #82a87a;
 }
 
 .save-modal__panel {
-  background: var(--panel-hi);
-  border: var(--border) solid var(--line);
+  background: var(--pv-stone);
+  border: 2px solid var(--pv-ink);
+  box-shadow: 4px 4px 0 var(--pv-ink);
   padding: var(--s4);
 }
 
@@ -287,15 +298,16 @@ body.is-modal-open {
 }
 
 .save-modal__preview-sub {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--gold);
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 12px;
+  color: var(--pv-sun-lit);
   margin-top: 4px;
 }
 
 .save-modal__fmt-btn {
-  background: var(--panel);
-  border: var(--border) solid var(--line);
+  background: var(--pv-stone-dk);
+  border: 2px solid var(--pv-ink);
+  box-shadow: 2px 2px 0 var(--pv-ink);
   padding: var(--s2);
   cursor: pointer;
   text-align: center;
@@ -307,26 +319,26 @@ body.is-modal-open {
 
 .save-modal__fmt-btn:hover,
 .save-modal__fmt-btn.is-active {
-  border-color: var(--cyan);
-  background: color-mix(in srgb, var(--cyan) 18%, var(--panel));
-  color: var(--cyan);
+  border-color: var(--pv-sun);
+  background: var(--pv-stone);
+  color: var(--pv-sun-lit);
 }
 
 .fmt-title {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
   font-weight: bold;
 }
 
 .fmt-ext {
-  font-family: var(--font-mono);
-  font-size: 8px;
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 11px;
   opacity: 0.75;
 }
 
 .save-modal__preview-box {
-  background: var(--void);
-  border: var(--border) solid var(--line);
+  background: var(--pv-void);
+  border: 2px solid var(--pv-ink);
   padding: var(--s3);
   display: flex;
   flex-direction: column;
@@ -335,9 +347,9 @@ body.is-modal-open {
 }
 
 .save-modal__preview-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--ink-mute);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--pv-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -346,7 +358,7 @@ body.is-modal-open {
   max-width: 100%;
   height: auto;
   image-rendering: pixelated;
-  border: var(--border) solid var(--line);
+  border: 2px solid var(--pv-ink);
 }
 
 .save-modal__preview-scroll {
@@ -371,8 +383,8 @@ body.is-modal-open {
   gap: var(--s1);
   max-height: 130px;
   overflow-y: auto;
-  background: var(--void);
-  border: var(--border) solid var(--line);
+  background: var(--pv-void);
+  border: 2px solid var(--pv-ink);
   padding: var(--s2);
 }
 
@@ -383,20 +395,20 @@ body.is-modal-open {
   padding: 4px var(--s2);
   cursor: pointer;
   border: 1px solid transparent;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: 'Fira Sans', sans-serif;
+  font-size: 13px;
 }
 
 .save-modal__frame-item:hover {
-  background: var(--panel-hi);
-  border-color: var(--line);
+  background: var(--pv-stone-dk);
+  border-color: var(--pv-ink);
 }
 
 .save-modal__frame-thumb-wrap {
   width: 24px;
   height: 24px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--pv-stone-dk);
+  border: 1px solid var(--pv-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -409,11 +421,11 @@ body.is-modal-open {
 }
 
 .btn--xs {
-  font-size: 9px;
+  font-size: 8px;
   padding: 2px 6px;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 640px) {
   .save-modal__tabs {
     grid-template-columns: 1fr;
   }
