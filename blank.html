@@ -244,16 +244,6 @@
 
     <div class="topbar__spacer"></div>
 
-    <label class="field">
-      <span class="field__label">Grid</span>
-      <select id="studio-grid-size" class="select">
-        <option value="16">16 × 16</option>
-        <option value="32" selected>32 × 32</option>
-        <option value="64">64 × 64</option>
-        <option value="128">128 × 128</option>
-      </select>
-    </label>
-
     <button class="btn btn--gold" id="btn-studio-save" title="Save options & export animation">Save</button>
   </header>
 
@@ -311,8 +301,6 @@
       <button class="btn btn--play" id="btn-play">▶  Play</button>
       <button class="btn btn--step" id="btn-next" title="Next frame">⏭</button>
       <button class="btn btn--ghost" id="btn-loop">🔁  Loop on</button>
-      <button class="btn btn--ghost" id="btn-studio-onion" title="Toggle onion skin ghosting of previous frames">🧅 Onion skin</button>
-      <button class="btn btn--ghost" id="btn-studio-grid-lines" title="Toggle canvas grid lines">Grid lines</button>
     </div>
 
     <div class="fps-bar">
@@ -325,7 +313,6 @@
       <div class="studio-strip__head">
         <p class="rail__heading">Sequence</p>
         <div class="studio-strip__actions">
-          <button class="btn btn--ghost btn--sm" id="btn-studio-empty" title="Add an empty frame after this one">+ Empty</button>
           <button class="btn btn--violet btn--sm" id="btn-studio-dupe">Duplicate</button>
           <button class="btn btn--danger btn--sm" id="btn-studio-delete" disabled>Delete</button>
         </div>

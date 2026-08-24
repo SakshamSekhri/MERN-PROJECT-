@@ -8,11 +8,10 @@
 import { state, PALETTE, pushRecentColor } from '../core/state.js';
 import { Renderer, drawThumbnail } from '../canvas/renderer.js';
 import { Timeline } from '../frames/timeline.js';
-import { addFrame, deleteFrame, moveFrame, resizeAllFrames } from '../frames/frameManager.js';
+import { addFrame, deleteFrame, moveFrame } from '../frames/frameManager.js';
 import { Player } from '../animation/player.js';
 import { computeStats, formatDuration } from '../animation/stats.js';
 import { pencil, eraser, fill, pick, drawLine } from '../canvas/tools.js';
-import { resolveOnion } from '../canvas/onionSkin.js';
 import { go, onEnter } from '../core/router.js';
 import { openStudioSaveModal } from './saveModal.js';
 import { scheduleAutosave } from './editor.js';
@@ -269,9 +268,6 @@ function refresh() {
 
   if (player.index >= state.frames.length) player.index = 0;
 
-  const studioSizeSelect = document.getElementById('studio-grid-size');
-  if (studioSizeSelect) studioSizeSelect.value = String(state.gridSize);
-
   drawPreview(player.index);
   timeline.render(state.frames, player.index);
   updateTransport();
@@ -283,17 +279,7 @@ function refresh() {
 function drawPreview(index) {
   const frame = state.frames[index];
   if (!frame || !renderer) return;
-
-  const onion = resolveOnion(state.frames, index, {
-    enabled: state.onionEnabled,
-    opacity: state.onionOpacity,
-    depth: state.onionDepth,
-  });
-
-  renderer.draw(frame.grid, {
-    showGridLines: state.showGridLines,
-    onion,
-  });
+  renderer.draw(frame.grid, { showGridLines: state.showGridLines });
   const frameNo = document.getElementById('studio-frame-no');
   if (frameNo) {
     frameNo.textContent = `${index + 1} / ${state.frames.length}`;
@@ -343,37 +329,6 @@ function bindTransport() {
     });
   }
 
-  const onionBtn = document.getElementById('btn-studio-onion');
-  if (onionBtn) {
-    onionBtn.addEventListener('click', () => {
-      state.onionEnabled = !state.onionEnabled;
-      updateTransport();
-      drawPreview(player.index);
-    });
-  }
-
-  const gridLinesBtn = document.getElementById('btn-studio-grid-lines');
-  if (gridLinesBtn) {
-    gridLinesBtn.addEventListener('click', () => {
-      state.showGridLines = !state.showGridLines;
-      updateTransport();
-      drawPreview(player.index);
-    });
-  }
-
-  const studioSizeSelect = document.getElementById('studio-grid-size');
-  if (studioSizeSelect) {
-    studioSizeSelect.addEventListener('change', e => {
-      const next = Number(e.target.value);
-      resizeAllFrames(state.frames, next);
-      state.gridSize = next;
-      const editorSizeSelect = document.getElementById('grid-size');
-      if (editorSizeSelect) editorSizeSelect.value = String(next);
-      refresh();
-      scheduleAutosave();
-    });
-  }
-
   const backBtn = document.getElementById('btn-studio-back');
   if (backBtn) {
     backBtn.addEventListener('click', () => {
@@ -388,15 +343,6 @@ function bindTransport() {
       player.pause();
       updateTransport();
       openStudioSaveModal(state);
-    });
-  }
-
-  const emptyBtn = document.getElementById('btn-studio-empty');
-  if (emptyBtn) {
-    emptyBtn.addEventListener('click', () => {
-      const next = addFrame(state.frames, player.index, state.gridSize, 'empty');
-      player.goTo(next);
-      refreshAfterEdit();
     });
   }
 
@@ -485,16 +431,6 @@ function updateTransport() {
   if (loop) {
     loop.classList.toggle('is-on', state.loop);
     loop.textContent = state.loop ? '🔁  Loop on' : '➡  Play once';
-  }
-
-  const onion = document.getElementById('btn-studio-onion');
-  if (onion) {
-    onion.classList.toggle('is-on', state.onionEnabled);
-  }
-
-  const gridLines = document.getElementById('btn-studio-grid-lines');
-  if (gridLines) {
-    gridLines.classList.toggle('is-on', state.showGridLines);
   }
 
   const btnDel = document.getElementById('btn-studio-delete');
