@@ -176,7 +176,7 @@
 }
 .ctx-menu button:hover { background: var(--line); color: var(--cyan); }
 
-@media (max-width: 780px) {
+@media (max-width: 600px) {
   .ref-grid { grid-template-columns: 1fr; }
   #ref-preview { width: 100%; height: auto; aspect-ratio: 1; }
 }

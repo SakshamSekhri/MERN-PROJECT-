@@ -38,7 +38,7 @@
   margin-right: auto;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 500px) {
   .save-status { display: none; }
   .restore-bar__detail { width: 100%; margin-right: 0; }
 }
@@ -413,7 +413,7 @@ body.is-modal-open {
   padding: 2px 6px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 500px) {
   .save-modal__tabs {
     grid-template-columns: 1fr;
   }

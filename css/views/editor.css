@@ -13,6 +13,8 @@
   box-shadow: 0 4px 12px #0006;
   flex-shrink: 0;
   z-index: 10;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .topbar__spacer { flex: 1; }
 
@@ -138,6 +140,14 @@
   touch-action: none;
 }
 
+/* ── tablet responsiveness: adjust canvas size for 3-column layout on 768px-1024px screens ── */
+@media (min-width: 601px) and (max-width: 1024px) {
+  #paint-canvas {
+    width: min(42vw, 50vh, 460px);
+    height: min(42vw, 50vh, 460px);
+  }
+}
+
 .stage__status {
   display: flex;
   gap: var(--s5);
@@ -154,8 +164,8 @@
 }
 .stat b { color: var(--ink); font-weight: 400; }
 
-/* ── responsive: rails collapse under the canvas ── */
-@media (max-width: 900px) {
+/* ── responsive: rails collapse under the canvas on phones only ── */
+@media (max-width: 600px) {
   .editor { grid-template-columns: 1fr; grid-auto-rows: min-content; overflow-y: auto; }
   .rail--left, .rail--right { border: none; border-top: var(--border) solid var(--line); }
   .toolset { flex-direction: row; flex-wrap: wrap; }
@@ -250,7 +260,7 @@
 /* the stage now stacks canvas + filmstrip, so stop centring vertically */
 .stage { justify-content: flex-start; overflow-y: auto; }
 
-@media (max-width: 900px) {
+@media (max-width: 600px) {
   .filmstrip__head { flex-direction: column; align-items: flex-start; }
 }
 
@@ -385,7 +395,7 @@
 #btn-ref-underlay.is-on,
 #btn-ref-panel.is-on { border-color: var(--cyan); color: var(--cyan); }
 
-@media (max-width: 1100px) {
+@media (max-width: 600px) {
   .stage__row { flex-direction: column; align-items: center; }
   .refpanel { width: min(100%, 420px); }
 }
