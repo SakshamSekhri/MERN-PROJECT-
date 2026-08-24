@@ -743,12 +743,12 @@ function stroke(x, y) {
 /* ─────────────── topbar ─────────────── */
 
 function bindTopbar() {
-  const homeBtn = document.querySelector('[data-action="home"]');
-  if (homeBtn) {
-    homeBtn.addEventListener('click', () => {
+  document.querySelectorAll('.topbar__brand, [data-action="home"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
       window.location.href = 'index.html';
     });
-  }
+  });
 
   const sizeSelect = document.getElementById('grid-size');
   if (sizeSelect) {

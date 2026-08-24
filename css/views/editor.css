@@ -42,6 +42,11 @@
   letter-spacing: .08em;
   color: var(--pv-text);
   text-decoration: none;
+  cursor: pointer;
+  transition: opacity .12s ease;
+}
+.topbar__brand:hover {
+  opacity: 0.88;
 }
 .topbar__brand .logo__accent {
   color: var(--pv-sun);
