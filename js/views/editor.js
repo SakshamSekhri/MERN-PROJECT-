@@ -949,6 +949,7 @@ function offerRestore() {
       if (bar) bar.hidden = true;
     },
     onDismiss: () => {
+      clearProject(activeSlot);
       const bar = document.getElementById('restore-bar');
       if (bar) bar.hidden = true;
     },

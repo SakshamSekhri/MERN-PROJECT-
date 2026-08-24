@@ -172,11 +172,36 @@ export function peekProject(slot = SLOT_BLANK) {
     raw = rawLoad(SLOT_DEFAULT, null);
   }
   if (!raw || !Array.isArray(raw.frames)) return null;
+
+  const hasPaintedCells = raw.frames.some(f => {
+    if (!f) return false;
+    if (f.g && Array.isArray(f.g.p)) return f.g.p.length > 0;
+    if (Array.isArray(f.grid)) return f.grid.some(r => Array.isArray(r) && r.some(c => c !== null));
+    return false;
+  });
+
+  const hasJournal = Boolean(
+    raw.journal &&
+    ((Array.isArray(raw.journal.x) && raw.journal.x.length > 0) ||
+     (Array.isArray(raw.journal.entries) && raw.journal.entries.length > 0))
+  );
+
+  const hasReference = Boolean(
+    raw.reference &&
+    ((raw.reference.g && Array.isArray(raw.reference.g.p) && raw.reference.g.p.length > 0) ||
+     (Array.isArray(raw.reference.grid) && raw.reference.grid.some(r => Array.isArray(r) && r.some(c => c !== null))))
+  );
+
+  // If the canvas/project is completely empty, don't prompt to restore
+  if (!hasPaintedCells && !hasJournal && !hasReference) {
+    return null;
+  }
+
   return {
     frames: raw.frames.length,
     gridSize: raw.gridSize ?? null,
     savedAt: raw.savedAt ?? null,
-    hasJournal: Boolean(raw.journal),
+    hasJournal,
     bytes: measure(raw),
   };
 }
