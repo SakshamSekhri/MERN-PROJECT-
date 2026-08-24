@@ -37,7 +37,7 @@ import { openResumeProjectModal } from './autosaveModal.js';
 
 import {
   saveProject, loadProject, peekProject, clearProject,
-  makeAutosave, describeAge, SLOT_BLANK,
+  makeAutosave, describeAge, SLOT_BLANK, SLOT_IMAGE,
 } from '../core/project.js';
 import { formatBytes } from '../core/codec.js';
 
@@ -991,14 +991,27 @@ function restoreSaved() {
   state.fps = data.fps;
   state.loop = data.loop;
 
+  if (data.reference) {
+    state.reference = data.reference;
+    state.refPanelOpen = true;
+    state.refUnderlay = true;
+  }
+
   journal.clear();
-  journal.entries = data.journal.entries;
-  journal.seq = data.journal.seq;
+  if (data.journal) {
+    journal.entries = data.journal.entries;
+    journal.seq = data.journal.seq;
+  }
 
   const sizeSelect = document.getElementById('grid-size');
   if (sizeSelect) sizeSelect.value = String(state.gridSize);
 
   updateReplayButton();
+
+  if (activeSlot === SLOT_IMAGE || state.reference) {
+    go('editor');
+  }
+
   redraw();
   setSaveStatus(`Restored · saved ${describeAge(data.savedAt)}`);
 }

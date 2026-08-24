@@ -17,7 +17,7 @@
 import { state } from '../core/state.js';
 import { imageToGrid, loadImageFromFile, releaseImage } from '../image/pixelate.js';
 import { drawThumbnail } from '../canvas/renderer.js';
-import { go } from '../core/router.js';
+import { go, onEnter } from '../core/router.js';
 import { scheduleAutosave } from './editor.js';
 
 let sourceImage = null;
@@ -30,6 +30,22 @@ export function initReference() {
   bindActions();
   bindContextMenu();
   showStep('upload');
+
+  onEnter('reference', () => {
+    if (state.reference && state.reference.grid) {
+      result = {
+        grid: state.reference.grid,
+        palette: state.reference.palette || [],
+        colorsBefore: state.reference.palette?.length || 0,
+      };
+      stale = false;
+      const previewCanvas = document.getElementById('ref-preview');
+      if (previewCanvas) drawThumbnail(previewCanvas, result.grid);
+      renderPalette(result.palette);
+      showStep('workspace');
+      updateUI();
+    }
+  });
 }
 
 /* ─────────────── steps ─────────────── */
