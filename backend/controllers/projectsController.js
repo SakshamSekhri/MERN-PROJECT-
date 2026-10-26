@@ -11,7 +11,7 @@ function parseProject(request) {
 }
 
 export async function listProjects(request, response) {
-  const docs = await Canvas.find({ ownerId: request.user.id, collaborative: { $ne: true } }).sort({ updatedAt: -1 }).limit(100).select('title gridSize frameIds updatedAt');
+  const docs = await Canvas.find({ ownerId: request.user.id }).sort({ updatedAt: -1 }).limit(100).select('title gridSize frameIds updatedAt');
   response.json({ projects: docs.map(summary) });
 }
 
@@ -23,7 +23,7 @@ export async function createProject(request, response) {
 
 export async function getProject(request, response) {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ error: 'Project not found' });
-  const doc = await Canvas.findOne({ _id: request.params.id, ownerId: request.user.id, collaborative: { $ne: true } });
+  const doc = await Canvas.findOne({ _id: request.params.id, ownerId: request.user.id });
   if (!doc) return response.status(404).json({ error: 'Project not found' });
   response.json({ project: { ...summary(doc), data: doc.checkpoint } });
 }
@@ -31,7 +31,7 @@ export async function getProject(request, response) {
 export async function updateProject(request, response) {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ error: 'Project not found' });
   const { title, project } = parseProject(request);
-  const doc = await Canvas.findOneAndUpdate({ _id: request.params.id, ownerId: request.user.id, collaborative: { $ne: true } }, {
+  const doc = await Canvas.findOneAndUpdate({ _id: request.params.id, ownerId: request.user.id }, {
     $set: { title, gridSize: project.gridSize, frameIds: project.frames.map(frame => frame.id), checkpoint: project },
   }, { new: true, runValidators: true });
   if (!doc) return response.status(404).json({ error: 'Project not found' });
@@ -40,7 +40,7 @@ export async function updateProject(request, response) {
 
 export async function deleteProject(request, response) {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ error: 'Project not found' });
-  const doc = await Canvas.findOneAndDelete({ _id: request.params.id, ownerId: request.user.id, collaborative: { $ne: true } });
+  const doc = await Canvas.findOneAndDelete({ _id: request.params.id, ownerId: request.user.id });
   if (!doc) return response.status(404).json({ error: 'Project not found' });
   response.status(204).end();
 }
