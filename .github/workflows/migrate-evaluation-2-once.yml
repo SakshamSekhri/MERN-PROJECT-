@@ -1,0 +1,30 @@
+name: Migrate Evaluation 2 data once
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-evaluation-2-data
+  cancel-in-progress: false
+
+jobs:
+  copy-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/migrate-evaluation-2-data.mjs
+        env:
+          MONGO_URI: ${{ secrets.E2_SOURCE_MONGO_URI }}
+          E2_MONGO_PASSWORD: ${{ secrets.E2_TARGET_MONGO_PASSWORD }}
+          E2_MONGO_USER: pixelverse_e2_app
+          E2_MONGO_HOST: pixelverse-2.n5snshk.mongodb.net
+          E2_MONGO_DB: pixelverse_2
