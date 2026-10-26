@@ -1,0 +1,694 @@
+/**
+ * Animation Studio view controller.
+ *
+ * Supports timeline sequence arrangement, playback transport, direct
+ * interactive editing on the studio preview canvas, and full toolbar & palette controls.
+ */
+
+import { state, PALETTE, pushRecentColor } from '../core/state.js';
+import { Renderer, drawThumbnail } from '../canvas/renderer.js';
+import { Timeline } from '../frames/timeline.js';
+import { addFrame, deleteFrame, moveFrame, resizeAllFrames } from '../frames/frameManager.js';
+import { Player } from '../animation/player.js';
+import { computeStats, formatDuration } from '../animation/stats.js';
+import { pencil, eraser, fill, pick, drawLine } from '../canvas/tools.js';
+import { resolveOnion } from '../canvas/onionSkin.js';
+import { go, onEnter } from '../core/router.js';
+import { openStudioSaveModal } from './saveModal.js';
+import { journal, scheduleAutosave, syncReplayJournal } from './editor.js';
+import { bindScreenPicker } from '../core/screenPicker.js';
+
+const FPS_OPTIONS = [8, 12, 16, 24, 30];
+
+let renderer, timeline, player;
+let painting = false;
+let lastCell = { x: -1, y: -1 };
+
+export function initStudio() {
+  const canvas = document.getElementById('studio-canvas');
+  if (!canvas) return;
+  renderer = new Renderer(canvas);
+
+  const timelineEl = document.getElementById('studio-timeline');
+  if (timelineEl) {
+    timeline = new Timeline(timelineEl, {
+      onSelect: index => { player.goTo(index); },
+      onReorder: reorderFrame,
+    });
+  }
+
+  player = new Player(
+    () => state.frames,
+    index => {
+      drawPreview(index);
+      highlightActive(index);
+    }
+  );
+  player.onStop = () => updateTransport();
+
+  buildFpsButtons();
+  bindTransport();
+  bindStudioPointer();
+  bindStudioToolbar();
+  buildStudioPalette();
+  setStudioColor(state.color);
+  bindStudioSizing();
+
+  onEnter('studio', () => {
+    refresh();
+    resizeStudioCanvas();
+  });
+}
+
+/* ─────────────── studio toolbar & palette ─────────────── */
+
+function bindStudioToolbar() {
+  document.querySelectorAll('#studio-toolset .tool').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectStudioTool(btn.dataset.tool);
+    });
+  });
+
+  const custom = document.getElementById('studio-custom-color');
+  if (custom) {
+    custom.addEventListener('input', e => setStudioColor(e.target.value));
+  }
+  bindScreenPicker(document.getElementById('btn-studio-screen-pick'), document.getElementById('studio-screen-pick-status'), color => {
+    setStudioColor(color);
+    pushRecentColor(color);
+  });
+
+  const btnUndo = document.getElementById('btn-studio-undo');
+  if (btnUndo) {
+    btnUndo.addEventListener('click', () => {
+      const frame = state.frames[player.index];
+      if (frame && frame.history.undo(frame.grid)) {
+        refreshAfterEdit();
+      }
+    });
+  }
+
+  const btnRedo = document.getElementById('btn-studio-redo');
+  if (btnRedo) {
+    btnRedo.addEventListener('click', () => {
+      const frame = state.frames[player.index];
+      if (frame && frame.history.redo(frame.grid)) {
+        refreshAfterEdit();
+      }
+    });
+  }
+
+  const btnClear = document.getElementById('btn-studio-clear');
+  if (btnClear) {
+    btnClear.addEventListener('click', () => {
+      const frame = state.frames[player.index];
+      if (!frame) return;
+      const history = frame.history;
+      history.begin();
+      for (let y = 0; y < state.gridSize; y++) {
+        for (let x = 0; x < state.gridSize; x++) {
+          if (frame.grid[y][x] !== null) {
+            history.record(x, y, frame.grid[y][x], null);
+            frame.grid[y][x] = null;
+          }
+        }
+      }
+      history.commit();
+      refreshAfterEdit();
+    });
+  }
+}
+
+function selectStudioTool(tool) {
+  state.tool = tool;
+  document.querySelectorAll('.tool').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.tool === tool);
+  });
+}
+
+function buildStudioPalette() {
+  const wrap = document.getElementById('studio-palette');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  PALETTE.forEach(hex => {
+    const b = document.createElement('button');
+    b.className = 'swatch';
+    b.style.background = hex;
+    b.title = hex;
+    b.addEventListener('click', () => setStudioColor(hex));
+    wrap.appendChild(b);
+  });
+}
+
+function setStudioColor(hex) {
+  state.color = hex;
+  const chip = document.getElementById('studio-active-chip');
+  if (chip) chip.style.background = hex;
+  const hexEl = document.getElementById('studio-active-hex');
+  if (hexEl) hexEl.textContent = hex.toUpperCase();
+  const custom = document.getElementById('studio-custom-color');
+  if (custom) custom.value = hex;
+
+  const mainChip = document.getElementById('active-chip');
+  if (mainChip) mainChip.style.background = hex;
+  const mainHex = document.getElementById('active-hex');
+  if (mainHex) mainHex.textContent = hex.toUpperCase();
+  const mainCustom = document.getElementById('custom-color');
+  if (mainCustom) mainCustom.value = hex;
+
+  document.querySelectorAll('.palette .swatch').forEach(s => {
+    s.classList.toggle('is-active', rgbToHex(s.style.background) === hex.toLowerCase());
+  });
+}
+
+function rgbToHex(rgb) {
+  if (!rgb) return '';
+  if (rgb.startsWith('#')) return rgb.toLowerCase();
+  const m = rgb.match(/\d+/g);
+  if (!m || m.length < 3) return '';
+  const r = Number(m[0]).toString(16).padStart(2, '0');
+  const g = Number(m[1]).toString(16).padStart(2, '0');
+  const b = Number(m[2]).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}`;
+}
+
+/* ─────────────── interactive direct editing ─────────────── */
+
+function bindStudioPointer() {
+  const canvas = document.getElementById('studio-canvas');
+  if (!canvas) return;
+
+  canvas.style.cursor = 'crosshair';
+
+  canvas.addEventListener('pointerdown', e => {
+    if (player.playing) {
+      player.pause();
+      updateTransport();
+    }
+
+    const frame = state.frames[player.index];
+    if (!frame) return;
+
+    const { x, y } = renderer.toCell(e, state.gridSize);
+
+    if (state.tool === 'picker') {
+      const c = pick(frame.grid, x, y);
+      if (c) {
+        setStudioColor(c);
+        pushRecentColor(c);
+      }
+      return;
+    }
+
+    canvas.setPointerCapture(e.pointerId);
+    painting = true;
+    frame.history.begin();
+    lastCell = { x: -1, y: -1 };
+    strokeStudio(frame, x, y);
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    if (!painting) return;
+    const frame = state.frames[player.index];
+    if (!frame) return;
+
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of events) {
+      const { x, y } = renderer.toCell(ev, state.gridSize);
+      strokeStudio(frame, x, y);
+    }
+  });
+
+  const end = () => {
+    if (!painting) return;
+    painting = false;
+    lastCell = { x: -1, y: -1 };
+    const frame = state.frames[player.index];
+    if (frame && frame.history.commit()) {
+      refreshAfterEdit();
+    }
+  };
+
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+}
+
+function strokeStudio(frame, x, y) {
+  if (x === lastCell.x && y === lastCell.y) return;
+
+  const grid = frame.grid;
+  const history = frame.history;
+  let changed = false;
+
+  const startX = (lastCell.x >= 0) ? lastCell.x : x;
+  const startY = (lastCell.y >= 0) ? lastCell.y : y;
+  lastCell = { x, y };
+
+  if (state.tool === 'pencil') {
+    changed = drawLine(grid, history, startX, startY, x, y, (g, h, cx, cy) => pencil(g, h, cx, cy, state.color));
+    if (changed) pushRecentColor(state.color);
+  } else if (state.tool === 'eraser') {
+    changed = drawLine(grid, history, startX, startY, x, y, (g, h, cx, cy) => eraser(g, h, cx, cy));
+  } else if (state.tool === 'fill') {
+    changed = fill(grid, history, x, y, state.color);
+    painting = false;
+    if (changed) pushRecentColor(state.color);
+    history.commit();
+    refreshAfterEdit();
+    return;
+  }
+
+  if (changed) {
+    drawPreview(player.index);
+    const thumb = document.querySelector(
+      `#studio-timeline .frame-item[data-index="${player.index}"] canvas`
+    );
+    if (thumb) drawThumbnail(thumb, grid);
+    updateStats();
+  }
+}
+
+/* ─────────────── rendering ─────────────── */
+
+/** Full refresh: preview, timeline, transport, stats. */
+function refresh() {
+  player.pause();
+  player.setFps(state.fps);
+  player.setLoop(state.loop);
+
+  if (player.index >= state.frames.length) player.index = 0;
+
+  const studioSizeSelect = document.getElementById('studio-grid-size');
+  if (studioSizeSelect) studioSizeSelect.value = String(state.gridSize);
+
+  drawPreview(player.index);
+  timeline.render(state.frames, player.index);
+  updateTransport();
+  updateStats();
+  setStudioColor(state.color);
+  selectStudioTool(state.tool);
+}
+
+function drawPreview(index) {
+  const frame = state.frames[index];
+  if (!frame || !renderer) return;
+
+  const onion = resolveOnion(state.frames, index, {
+    enabled: state.onionEnabled,
+    opacity: state.onionOpacity,
+    depth: state.onionDepth,
+  });
+
+  renderer.draw(frame.grid, {
+    showGridLines: state.showGridLines,
+    onion,
+  });
+  const frameNo = document.getElementById('studio-frame-no');
+  if (frameNo) {
+    frameNo.textContent = `${index + 1} / ${state.frames.length}`;
+  }
+}
+
+function highlightActive(index) {
+  document.querySelectorAll('#studio-timeline .frame-item').forEach(el => {
+    el.classList.toggle('is-active', Number(el.dataset.index) === index);
+  });
+}
+
+/* ─────────────── transport & keyboard ─────────────── */
+
+function bindTransport() {
+  const playBtn = document.getElementById('btn-play');
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      player.toggle();
+      updateTransport();
+    });
+  }
+
+  const prevBtn = document.getElementById('btn-prev');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      player.step(-1);
+      updateTransport();
+    });
+  }
+
+  const nextBtn = document.getElementById('btn-next');
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      player.step(1);
+      updateTransport();
+    });
+  }
+
+  const loopBtn = document.getElementById('btn-loop');
+  if (loopBtn) {
+    loopBtn.addEventListener('click', () => {
+      state.loop = !state.loop;
+      player.setLoop(state.loop);
+      updateTransport();
+      scheduleAutosave();
+    });
+  }
+
+  const onionBtn = document.getElementById('btn-studio-onion');
+  if (onionBtn) {
+    onionBtn.addEventListener('click', () => {
+      state.onionEnabled = !state.onionEnabled;
+      updateTransport();
+      drawPreview(player.index);
+    });
+  }
+
+  const gridLinesBtn = document.getElementById('btn-studio-grid-lines');
+  if (gridLinesBtn) {
+    gridLinesBtn.addEventListener('click', () => {
+      state.showGridLines = !state.showGridLines;
+      updateTransport();
+      drawPreview(player.index);
+    });
+  }
+
+  const studioSizeSelect = document.getElementById('studio-grid-size');
+  if (studioSizeSelect) {
+    studioSizeSelect.addEventListener('change', e => {
+      const next = Number(e.target.value);
+      resizeAllFrames(state.frames, next, journal);
+      state.gridSize = next;
+      syncReplayJournal();
+      const editorSizeSelect = document.getElementById('grid-size');
+      if (editorSizeSelect) editorSizeSelect.value = String(next);
+      refresh();
+      scheduleAutosave();
+    });
+  }
+
+  const backBtn = document.getElementById('btn-studio-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      player.pause();
+      go('editor');
+    });
+  }
+
+  const saveBtn = document.getElementById('btn-studio-save');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      player.pause();
+      updateTransport();
+      openStudioSaveModal(state);
+    });
+  }
+
+  const emptyBtn = document.getElementById('btn-studio-empty');
+  if (emptyBtn) {
+    emptyBtn.addEventListener('click', () => {
+      const next = addFrame(state.frames, player.index, state.gridSize, 'empty', journal);
+      player.goTo(next);
+      refreshAfterEdit();
+    });
+  }
+
+  const dupeBtn = document.getElementById('btn-studio-dupe');
+  if (dupeBtn) {
+    dupeBtn.addEventListener('click', () => {
+      const next = addFrame(state.frames, player.index, state.gridSize, 'duplicate', journal);
+      syncReplayJournal();
+      player.goTo(next);
+      refreshAfterEdit();
+    });
+  }
+
+  const delBtn = document.getElementById('btn-studio-delete');
+  if (delBtn) {
+    delBtn.addEventListener('click', () => {
+      const next = deleteFrame(state.frames, player.index);
+      if (next === null) return;
+      player.goTo(next);
+      refreshAfterEdit();
+    });
+  }
+
+  window.addEventListener('keydown', e => {
+    if (state.view !== 'studio') return;
+    if (e.target.matches('input, select, textarea')) return;
+
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod) {
+      const key = e.key.toLowerCase();
+      if (key === 'z') {
+        e.preventDefault();
+        const frame = state.frames[player.index];
+        if (frame) {
+          const changed = e.shiftKey ? frame.history.redo(frame.grid) : frame.history.undo(frame.grid);
+          if (changed) refreshAfterEdit();
+        }
+        return;
+      }
+      if (key === 'y') {
+        e.preventDefault();
+        const frame = state.frames[player.index];
+        if (frame) {
+          const changed = frame.history.redo(frame.grid);
+          if (changed) refreshAfterEdit();
+        }
+        return;
+      }
+    }
+
+    if (e.code === 'Space') { e.preventDefault(); player.toggle(); updateTransport(); return; }
+    if (e.key === 'ArrowLeft')  { player.step(-1); updateTransport(); return; }
+    if (e.key === 'ArrowRight') { player.step(1);  updateTransport(); return; }
+    if (e.key === '[') { e.preventDefault(); toggleStudioToolbar(); return; }
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); setStudioZoom(currentStudioZoom + 0.25); return; }
+    if (e.key === '-' || e.key === '_') { e.preventDefault(); setStudioZoom(currentStudioZoom - 0.25); return; }
+    if (e.key === '0') { e.preventDefault(); setStudioZoom(1.0); return; }
+
+    const map = { b: 'pencil', e: 'eraser', g: 'fill', i: 'picker' };
+    const tool = map[e.key.toLowerCase()];
+    if (tool) {
+      selectStudioTool(tool);
+    }
+  });
+}
+
+function refreshAfterEdit() {
+  if (timeline) timeline.render(state.frames, player.index);
+  drawPreview(player.index);
+  updateTransport();
+  updateStats();
+  const btnUndo = document.getElementById('btn-studio-undo');
+  const frame = state.frames[player.index];
+  if (btnUndo && frame) btnUndo.disabled = !frame.history.canUndo;
+  const btnRedo = document.getElementById('btn-studio-redo');
+  if (btnRedo && frame) btnRedo.disabled = !frame.history.canRedo;
+  scheduleAutosave();
+}
+
+function updateTransport() {
+  const play = document.getElementById('btn-play');
+  if (play) {
+    play.textContent = player.playing ? '❚❚  Pause' : '▶  Play';
+    play.classList.toggle('is-playing', player.playing);
+    play.disabled = state.frames.length < 2;
+    play.title = state.frames.length < 2
+      ? 'Add a second frame to play — try Duplicate'
+      : '';
+  }
+  const loop = document.getElementById('btn-loop');
+  if (loop) {
+    loop.classList.toggle('is-on', state.loop);
+    loop.textContent = state.loop ? '🔁  Loop on' : '➡  Play once';
+  }
+
+  const onion = document.getElementById('btn-studio-onion');
+  if (onion) {
+    onion.classList.toggle('is-on', state.onionEnabled);
+  }
+
+  const gridLines = document.getElementById('btn-studio-grid-lines');
+  if (gridLines) {
+    gridLines.classList.toggle('is-on', state.showGridLines);
+  }
+
+  const btnDel = document.getElementById('btn-studio-delete');
+  if (btnDel) btnDel.disabled = state.frames.length <= 1;
+
+  const btnUndo = document.getElementById('btn-studio-undo');
+  const frame = state.frames[player.index];
+  if (btnUndo && frame) btnUndo.disabled = !frame.history.canUndo;
+  const btnRedo = document.getElementById('btn-studio-redo');
+  if (btnRedo && frame) btnRedo.disabled = !frame.history.canRedo;
+}
+
+/* ─────────────── fps ─────────────── */
+
+function buildFpsButtons() {
+  const wrap = document.getElementById('fps-options');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  FPS_OPTIONS.forEach(fps => {
+    const b = document.createElement('button');
+    b.className = 'fps' + (fps === state.fps ? ' is-active' : '');
+    b.textContent = fps;
+    b.addEventListener('click', () => {
+      state.fps = fps;
+      player.setFps(fps);
+      wrap.querySelectorAll('.fps').forEach(x => x.classList.toggle('is-active', x === b));
+      updateStats();
+      scheduleAutosave();
+    });
+    wrap.appendChild(b);
+  });
+}
+
+/* ─────────────── frames & stats ─────────────── */
+
+function reorderFrame(from, to) {
+  const wasActive = state.frames[player.index];
+  moveFrame(state.frames, from, to);
+  player.index = state.frames.indexOf(wasActive);
+  refreshAfterEdit();
+}
+
+function updateStats() {
+  const s = computeStats(state.frames, state.fps);
+  const countEl = document.getElementById('stat-count');
+  if (countEl) countEl.textContent = s.count;
+  const sizeEl = document.getElementById('stat-size');
+  if (sizeEl) sizeEl.textContent = `${s.gridSize} × ${s.gridSize}`;
+  const fpsEl = document.getElementById('stat-fps');
+  if (fpsEl) fpsEl.textContent = s.fps;
+  const durEl = document.getElementById('stat-duration');
+  if (durEl) durEl.textContent = formatDuration(s.durationMs);
+  const blankEl = document.getElementById('stat-blank');
+  if (blankEl) blankEl.textContent = s.blank;
+}
+
+/* ─────────────── dynamic studio canvas sizing, zoom & toolbar toggle ─────────────── */
+
+let currentStudioZoom = 1.0;
+
+export function setStudioZoom(zoom) {
+  currentStudioZoom = Math.min(3.0, Math.max(0.5, Math.round(zoom * 100) / 100));
+  updateStudioZoomUI();
+  resizeStudioCanvas();
+}
+
+function updateStudioZoomUI() {
+  const readout = document.getElementById('studio-zoom-readout');
+  if (readout) {
+    readout.textContent = (currentStudioZoom === 1.0) ? 'Fit' : `${Math.round(currentStudioZoom * 100)}%`;
+  }
+}
+
+export function resizeStudioCanvas() {
+  const canvas = document.getElementById('studio-canvas');
+  const studio = document.querySelector('.studio');
+  if (!canvas || !studio) return;
+
+  const toolbar = document.querySelector('.studio-toolbar');
+  const transport = document.querySelector('.transport');
+  const fpsBar = document.querySelector('.fps-bar');
+  const strip = document.querySelector('.studio-strip');
+  const info = document.querySelector('.studio .info');
+  const previewHeader = document.querySelector('.preview__header');
+  const previewHint = document.querySelector('.preview > .filmstrip__hint');
+  const usedHeight = [toolbar, transport, fpsBar, strip, info, previewHeader, previewHint]
+    .reduce((total, el) => total + (el ? el.offsetHeight : 0), 0);
+  const studioStyle = getComputedStyle(studio);
+  const padding = (parseFloat(studioStyle.paddingTop) || 0) + (parseFloat(studioStyle.paddingBottom) || 0);
+  const gaps = (parseFloat(studioStyle.gap) || 0) * 6;
+  const availH = studio.clientHeight - usedHeight - padding - gaps - 12;
+  const availW = Math.min(960, studio.clientWidth - 40) - 12;
+  // Keep the drawing surface useful on shorter screens; the studio itself
+  // scrolls when its transport, timeline, and info need more room.
+  const canvasShare = studio.clientWidth < 700 ? 0.48 : 0.6;
+  const targetH = Math.max(availH, studio.clientHeight * canvasShare);
+  const minimum = studio.clientWidth < 700 ? 280 : 240;
+  const baseSize = Math.max(minimum, Math.floor(Math.min(availW, targetH, 680)));
+  const finalSize = Math.round(baseSize * currentStudioZoom);
+
+  canvas.style.width = `${finalSize}px`;
+  canvas.style.height = `${finalSize}px`;
+}
+
+export function toggleStudioToolbar(collapse) {
+  const toolbar = document.querySelector('.studio-toolbar');
+  const expandBtn = document.getElementById('btn-expand-studio-toolbar');
+  const toggleBtn = document.getElementById('btn-toggle-studio-toolbar');
+  if (!toolbar) return;
+
+  const willCollapse = (typeof collapse === 'boolean') ? collapse : !toolbar.classList.contains('is-collapsed');
+  toolbar.classList.toggle('is-collapsed', willCollapse);
+  if (expandBtn) expandBtn.hidden = !willCollapse;
+  if (toggleBtn) {
+    toggleBtn.textContent = willCollapse ? '▼' : '▲';
+    toggleBtn.title = willCollapse ? 'Expand studio tools' : 'Collapse studio tools';
+  }
+
+  const start = performance.now();
+  function step(now) {
+    resizeStudioCanvas();
+    if (now - start < 200) {
+      requestAnimationFrame(step);
+    } else {
+      resizeStudioCanvas();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function bindStudioSizing() {
+  const btnToggle = document.getElementById('btn-toggle-studio-toolbar');
+  const btnExpand = document.getElementById('btn-expand-studio-toolbar');
+
+  if (btnToggle) btnToggle.addEventListener('click', () => toggleStudioToolbar(true));
+  if (btnExpand) btnExpand.addEventListener('click', () => toggleStudioToolbar(false));
+
+  const btnStudioZoomIn = document.getElementById('btn-studio-zoom-in');
+  const btnStudioZoomOut = document.getElementById('btn-studio-zoom-out');
+  const btnStudioZoomReset = document.getElementById('btn-studio-zoom-reset');
+
+  if (btnStudioZoomIn) btnStudioZoomIn.addEventListener('click', () => setStudioZoom(currentStudioZoom + 0.25));
+  if (btnStudioZoomOut) btnStudioZoomOut.addEventListener('click', () => setStudioZoom(currentStudioZoom - 0.25));
+  if (btnStudioZoomReset) btnStudioZoomReset.addEventListener('click', () => setStudioZoom(1.0));
+
+  const studio = document.querySelector('.studio');
+  const preview = document.querySelector('.preview');
+
+  if (preview) {
+    preview.addEventListener('wheel', e => {
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.15 : -0.15;
+        setStudioZoom(currentStudioZoom + delta);
+      }
+    }, { passive: false });
+  }
+
+  if (window.ResizeObserver) {
+    let rAfId = null;
+    const ro = new ResizeObserver(() => {
+      if (rAfId) cancelAnimationFrame(rAfId);
+      rAfId = requestAnimationFrame(() => {
+        resizeStudioCanvas();
+      });
+    });
+    if (studio) ro.observe(studio);
+    if (preview) ro.observe(preview);
+  }
+
+  window.addEventListener('resize', () => {
+    if (state.view === 'studio') resizeStudioCanvas();
+  });
+
+  window.addEventListener('orientationchange', () => {
+    if (state.view === 'studio') setTimeout(resizeStudioCanvas, 100);
+  });
+
+  requestAnimationFrame(() => {
+    resizeStudioCanvas();
+  });
+}
