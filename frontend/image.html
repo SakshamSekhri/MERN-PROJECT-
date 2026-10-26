@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PixelVerse — Create from Image</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Fira+Sans:wght@400;500;600&amp;family=Press+Start+2P&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css" rel="stylesheet"/>
+<link href="css/base.css" rel="stylesheet">
+<link href="css/components.css" rel="stylesheet">
+<link href="css/views/editor.css" rel="stylesheet">
+<link href="css/views/reference.css" rel="stylesheet">
+<link href="css/components/forgeLoader.css" rel="stylesheet"/>
+<link href="css/components/replay.css" rel="stylesheet"/>
+<link href="css/components/save.css" rel="stylesheet"/>
+<link href="css/tablet.css" rel="stylesheet"/>
+<link href="css/components/account.css" rel="stylesheet"/>
+<link href="css/components/onboarding.css" rel="stylesheet"/>
+
+</head>
+<body>
+<!-- ═══════════════ VIEW: REFERENCE WORKSPACE ═══════════════ -->
+<section class="view view--reference is-active" id="view-reference">
+<header class="topbar">
+<a class="topbar__back" href="index.html" id="btn-ref-back" title="Back to landing page">←</a>
+<a class="topbar__brand" href="index.html">PIXEL<span class="logo__accent">VERSE</span></a>
+<span class="topbar__crumb">/ REFERENCE</span>
+</header>
+<div class="restore-bar" hidden="" id="restore-bar">
+<span class="restore-bar__label">Unsaved session found</span>
+<span class="restore-bar__detail" id="restore-detail"></span>
+<button class="btn btn--lime btn--sm" id="btn-restore">Restore</button>
+<button class="btn btn--ghost btn--sm" id="btn-restore-dismiss">Dismiss</button>
+</div>
+<main class="reference">
+<!-- ── STEP 1: UPLOAD ── -->
+<div id="ref-upload">
+<div class="drop" id="ref-drop">
+<div class="drop__icon">
+<svg height="40" viewbox="0 0 24 24" width="40"><g fill="none" stroke="currentColor" stroke-width="2"><rect height="16" width="18" x="3" y="4"></rect><path d="M3 16l5-5 4 4 3-3 6 6"></path><circle cx="8.5" cy="8.5" r="1.5"></circle></g></svg>
+</div>
+<p class="drop__title">Drop an image, or click to browse</p>
+<p class="drop__body">It becomes a pixel reference to trace over — not the artwork itself.</p>
+<p class="drop__types">JPG · PNG · WEBP · GIF</p>
+</div>
+<input accept="image/*" hidden="" id="ref-file" type="file"/>
+<p class="ref-error" id="ref-error"></p>
+</div>
+<!-- ── STEP 2: WORKSPACE ── -->
+<div hidden="" id="ref-workspace" style="display:contents">
+<div class="ref-grid">
+<div class="ref-panel" id="ref-source-panel">
+<div class="ref-panel__head">
+<p class="rail__heading">Original</p>
+<button class="btn btn--ghost btn--sm" id="btn-ref-hide">Hide original</button>
+</div>
+<div class="ref-panel__body">
+<img alt="Uploaded reference" id="ref-source"/>
+</div>
+<p class="filmstrip__hint"><span id="ref-filename">—</span> · <span id="ref-dims">—</span></p>
+</div>
+<div class="ref-panel">
+<div class="ref-panel__head">
+<p class="rail__heading">Pixel reference</p>
+</div>
+<div class="ref-panel__body">
+<canvas height="256" hidden="" id="ref-preview" width="256"></canvas>
+<div class="ref-placeholder" id="ref-placeholder">
+<svg aria-hidden="true" height="30" viewbox="0 0 24 24" width="30"><g fill="none" stroke="currentColor" stroke-width="2"><rect height="18" width="18" x="3" y="3"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18" opacity=".4"></path></g></svg>
+<p>Not converted yet</p>
+</div>
+</div>
+<div class="ref-swatches" id="ref-palette"></div>
+</div>
+</div>
+<div class="ref-options">
+<label class="field field--block">
+<span class="field__label">Resolution</span>
+<select class="select" id="ref-size">
+<option value="16">16 × 16</option>
+<option selected="" value="32">32 × 32</option>
+<option value="64">64 × 64</option>
+<option value="128">128 × 128</option>
+</select>
+</label>
+<label class="field field--block">
+<span class="field__label">Framing</span>
+<select class="select" id="ref-fit">
+<option selected="" value="cover">Crop to square</option>
+<option value="contain">Fit whole image</option>
+</select>
+</label>
+<label class="field field--block">
+<span class="field__label">Colours</span>
+<select class="select" id="ref-colors">
+<option value="8">8</option>
+<option selected="" value="16">16</option>
+<option value="32">32</option>
+<option value="0">No limit</option>
+</select>
+</label>
+<label class="field field--block">
+<span class="field__label">Method</span>
+<select class="select" id="ref-method">
+<option selected="" value="median-cut">Median cut</option>
+<option value="quantize">Channel quantise</option>
+</select>
+</label>
+</div>
+<div class="info">
+<div class="info__cell"><span class="info__label">Grid</span><span class="info__value" id="ref-stat-cells">32 × 32</span></div>
+<div class="info__cell"><span class="info__label">Colours before</span><span class="info__value" id="ref-stat-before">0</span></div>
+<div class="info__cell"><span class="info__label">Colours after</span><span class="info__value" id="ref-stat-after">0</span></div>
+</div>
+<p aria-live="polite" class="ref-status" id="ref-status" role="status">Pick your settings, then convert</p>
+<div class="ref-actions">
+<button class="btn btn--ghost" id="btn-ref-reset">Choose another image</button>
+<button class="btn btn--cyan" id="btn-ref-convert">Convert to pixel art</button>
+<button class="btn btn--cyan" disabled="" id="btn-ref-use">Use as reference →</button>
+</div>
+</div>
+</main>
+<div class="ctx-menu" hidden="" id="ref-menu">
+<button data-menu="convert">Convert to pixel art</button>
+<button data-menu="resolution">Change pixel resolution</button>
+<button data-menu="hide">Hide / show reference</button>
+<button data-menu="remove">Remove image</button>
+</div>
+</section>
+<!-- ═══════════════ VIEW: EDITOR ═══════════════ -->
+<section class="view view--editor" id="view-editor">
+<header class="topbar">
+<a class="topbar__back" data-action="home" href="index.html" title="Back to start">←</a>
+<a class="topbar__brand" href="index.html">PIXEL<span class="logo__accent">VERSE</span></a>
+<span class="topbar__crumb">editor</span>
+<div class="topbar__spacer"></div>
+<label class="field">
+<span class="field__label">Grid</span>
+<select class="select" id="grid-size">
+<option value="16">16 × 16</option>
+<option selected="" value="32">32 × 32</option>
+<option value="64">64 × 64</option>
+<option value="128">128 × 128</option>
+</select>
+</label>
+<button class="btn btn--ghost" id="btn-save" title="Open local, cloud, and export save options">Save</button>
+<button class="btn btn--sun" id="btn-publish" title="Publish a fixed copy to the gallery">Publish</button>
+<details class="editor-menu">
+<summary class="btn btn--ghost" data-tour="view-menu">View</summary>
+<div class="editor-menu__panel">
+<button class="btn btn--ghost" id="btn-grid-lines">Grid lines</button>
+<button class="btn btn--lime" disabled="" id="btn-replay">Replay <span id="replay-count">0</span></button>
+</div>
+</details>
+<details class="editor-menu">
+<summary class="btn btn--ghost" data-tour="community-menu">Community</summary>
+<div class="editor-menu__panel">
+<a class="btn btn--ghost" href="gallery.html">Gallery</a>
+<a class="btn btn--ghost" href="gallery.html?activity=1">Activity</a>
+
+
+
+</div>
+</details>
+<details class="editor-menu editor-menu--create">
+<summary class="btn btn--ghost" data-tour="create-menu">Create</summary>
+<div class="editor-menu__panel">
+<a class="btn btn--gold" href="blank.html" id="btn-start-creating">Start creating</a>
+<button class="btn btn--danger" id="btn-new" title="Delete the save and start over">New canvas</button>
+</div>
+</details>
+<button class="btn btn--ghost" data-account-open="" title="Sign in or create an account" type="button">Account</button>
+</header>
+<main class="editor">
+<!-- ── TOOLS ── -->
+<aside class="rail rail--left">
+<div class="rail__head">
+<p class="rail__heading">Tools</p>
+<button class="rail-toggle" id="btn-toggle-tools" title="Collapse tools (Key: [)">◀</button>
+</div>
+<div class="toolset" id="toolset">
+<button class="tool is-active" data-accent="hot" data-tool="pencil" title="Pencil — B">
+<svg height="20" viewbox="0 0 24 24" width="20"><path d="M4 20l4-1L20 7l-3-3L5 16z" fill="none" stroke="currentColor" stroke-width="2"></path></svg>
+<span>Pencil</span><kbd>B</kbd>
+</button>
+<button class="tool" data-accent="cyan" data-tool="eraser" title="Eraser — E">
+<svg height="20" viewbox="0 0 24 24" width="20"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l7-7 6 6-4 4H7z"></path><path d="M9 21h11"></path></g></svg>
+<span>Eraser</span><kbd>E</kbd>
+</button>
+<button class="tool" data-accent="lime" data-tool="fill" title="Fill — G">
+<svg height="20" viewbox="0 0 24 24" width="20"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l7-7 7 7-7 7z"></path><path d="M19 15c1.5 2 2 3 2 4a2 2 0 11-4 0c0-1 .5-2 2-4z"></path></g></svg>
+<span>Fill</span><kbd>G</kbd>
+</button>
+<button class="tool" data-accent="gold" data-tool="picker" title="Pick colour — I">
+<svg height="20" viewbox="0 0 24 24" width="20"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4-9 9-4 1 1-4z"></path><path d="M4 20h6"></path></g></svg>
+<span>Picker</span><kbd>I</kbd>
+</button>
+</div>
+<div hidden="" id="ref-controls">
+<p class="rail__heading">Reference</p>
+<div class="onion">
+<button class="btn btn--ghost btn--wide" id="btn-ref-panel">Show reference</button>
+<button class="btn btn--ghost btn--wide" id="btn-ref-underlay">Trace underneath</button>
+<div class="onion__slider">
+<input class="range" id="ref-underlay-opacity" max="100" min="0" type="range" value="35"/>
+<span class="onion__readout" id="ref-underlay-readout">35%</span>
+</div>
+<button class="btn btn--ghost btn--wide btn--sm" id="btn-ref-new">Replace image</button>
+</div>
+<p class="rail__heading">Accuracy</p>
+<div class="onion">
+<button class="btn btn--lime btn--wide" id="btn-compare">Compare with reference</button>
+<div class="onion__slider">
+<input class="range" id="tolerance" max="40" min="0" type="range" value="12"/>
+<span class="onion__readout" id="tolerance-readout">12%</span>
+</div>
+<p class="onion__hint">Colour tolerance</p>
+</div>
+<div class="score" hidden="" id="score-panel">
+<div class="score__headline">
+<span class="score__big" id="score-overall">—</span>
+<span class="score__label">overall</span>
+</div>
+<div class="score__split">
+<div class="score__cell">
+<span class="score__num" id="score-placement">—</span>
+<span class="score__cap">placement</span>
+</div>
+<div class="score__cell">
+<span class="score__num" id="score-color">—</span>
+<span class="score__cap">colour</span>
+</div>
+</div>
+<p class="score__verdict" id="score-verdict"></p>
+<ul class="score__errors">
+<li><i class="dot dot--missing"></i> missing <b id="score-missing">0</b></li>
+<li><i class="dot dot--extra"></i> extra <b id="score-extra">0</b></li>
+<li><i class="dot dot--wrong"></i> wrong colour <b id="score-wrong">0</b></li>
+</ul>
+<button class="btn btn--ghost btn--wide btn--sm is-on" id="btn-show-errors">Hide mistakes</button>
+<button class="btn btn--danger btn--wide btn--sm" id="btn-close-compare" style="margin-top: 4px;">Cancel comparison</button>
+</div>
+</div>
+<p class="rail__heading">History</p>
+<div class="rail__row">
+<button class="btn btn--ghost btn--wide" disabled="" id="btn-undo">Undo <kbd>⌘Z</kbd></button>
+<button class="btn btn--ghost btn--wide" disabled="" id="btn-redo">Redo <kbd>⌘Y</kbd></button>
+</div>
+<button class="btn btn--danger btn--wide" id="btn-clear">Clear canvas</button>
+</aside>
+<!-- ── CANVAS ── -->
+<div class="stage">
+<button class="rail-expand-tab" hidden="" id="btn-expand-tools" title="Expand tools (Key: [)">▶</button>
+<button class="rail-expand-tab" hidden="" id="btn-expand-color" style="left: auto; right: 8px;" title="Expand colour rail">◀ Colour</button>
+<div class="stage__chrome">
+<div class="stage__status">
+<span class="stat"><em>cell</em><b id="stat-cell">—</b></span>
+<span class="stat"><em>painted</em><b id="stat-filled">0</b></span>
+<span class="stat"><em>steps</em><b id="stat-steps">0</b></span>
+</div>
+<span aria-live="polite" class="save-status" id="save-status" role="status"></span>
+<div class="stage__zoom" id="paint-zoom-bar">
+<button class="zoom-btn" id="btn-zoom-out" title="Zoom out (-)">-</button>
+<span class="zoom-readout" id="zoom-readout">Fit</span>
+<button class="zoom-btn" id="btn-zoom-in" title="Zoom in (+)">+</button>
+<button class="zoom-btn zoom-btn--reset" id="btn-zoom-reset" title="Reset zoom (0)">Fit</button>
+</div>
+</div>
+<div class="stage__row">
+<!-- ── REFERENCE PANEL ── -->
+<aside class="refpanel" hidden="" id="refpanel">
+<div class="refpanel__head">
+<p class="rail__heading">Reference</p>
+<div class="refpanel__zoom">
+<button class="btn btn--sm" id="ref-zoom-out" title="Zoom out">-</button>
+<span class="refpanel__readout" id="ref-zoom-readout">1x</span>
+<button class="btn btn--sm" id="ref-zoom-in" title="Zoom in">+</button>
+</div>
+</div>
+<div class="refpanel__scroll">
+<canvas height="480" id="ref-canvas" width="480"></canvas>
+</div>
+<button class="btn btn--ghost btn--wide btn--sm is-on" id="btn-ref-gridlines">Grid lines</button>
+<p class="refpanel__hint" id="ref-panel-hint">No reference loaded</p>
+</aside>
+<div class="stage__frame">
+<canvas aria-label="Pixel art canvas. Use arrow keys to move, Enter or Space to use the selected tool." height="640" id="paint-canvas" role="application" tabindex="0" width="640"></canvas>
+<span aria-live="polite" class="sr-only" id="canvas-keyboard-status" role="status"></span>
+</div>
+</div>
+</div>
+<!-- ── COLOUR ── -->
+<aside class="rail rail--right">
+<div class="rail__head">
+<p class="rail__heading">Colour</p>
+<button class="rail-toggle" id="btn-toggle-color" title="Collapse colour rail">▶</button>
+</div>
+<div class="swatch-active">
+<span class="swatch-active__chip" id="active-chip"></span>
+<span class="swatch-active__hex" id="active-hex">#FF2E88</span>
+</div>
+<div class="palette" id="palette"></div>
+<label class="field field--block">
+<span class="field__label">Custom</span>
+<input class="color-input" id="custom-color" type="color" value="#ff2e88"/>
+</label>
+<button class="btn btn--ghost btn--sm screen-pick-button" id="btn-screen-pick" title="Pick a colour from anywhere on the screen" type="button">Pick from screen</button>
+<p aria-live="polite" class="screen-pick-status" id="screen-pick-status" role="status"></p>
+<p class="rail__heading">Recent</p>
+<div class="palette palette--recent" id="recent"></div>
+</aside>
+</main>
+</section>
+<script src="js/image.js" type="module"></script>
+</body>
+</html>
