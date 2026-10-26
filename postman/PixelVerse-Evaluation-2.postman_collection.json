@@ -1,0 +1,281 @@
+{
+  "info": {
+    "name": "PixelVerse — Evaluation 2 deployed API CRUD",
+    "description": "Run in order against the deployed API with a disposable verified account. Keep passwords and access tokens out of screenshots and Git. Delete the demo project at the end.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://pixelverse-gilt.vercel.app"
+    },
+    {
+      "key": "email",
+      "value": "your-verified-test-account@example.com"
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    },
+    {
+      "key": "projectJson",
+      "value": "{\"v\":2,\"gridSize\":16,\"activeFrame\":0,\"frames\":[{\"id\":1,\"g\":{\"s\":16,\"p\":[\"#ff2e88\"],\"r\":[17,-1,1,0,238,-1]}}]}"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Health — deployed API and Atlas",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "url": "{{baseUrl}}/api/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('API and Atlas are ready', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().database).to.eql('connected'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Login — store access token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"{{email}}\",\"password\":\"{{password}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login succeeds', () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) pm.collectionVariables.set('accessToken', pm.response.json().accessToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Private projects require authentication",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Private projects reject guests', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Create project",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"Evaluation 2 demo project\",\"project\":{{projectJson}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Project created', () => { pm.response.to.have.status(201); pm.expect(pm.response.json().project.id).to.be.a('string'); });",
+              "if (pm.response.code === 201) pm.collectionVariables.set('projectId', pm.response.json().project.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 List projects",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/projects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('New project is listed', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().projects.map(project => project.id)).to.include(pm.collectionVariables.get('projectId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Read project",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Project pixels were stored', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().project.title).to.eql('Evaluation 2 demo project'); pm.expect(pm.response.json().project.data.gridSize).to.eql(16); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Update project",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"Evaluation 2 project updated\",\"project\":{{projectJson}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Project updated', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().project.title).to.eql('Evaluation 2 project updated'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Read updated project",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Update persisted in Atlas', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().project.title).to.eql('Evaluation 2 project updated'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Delete project",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Project deleted', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Confirm deletion",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/projects/{{projectId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Deleted project cannot be read', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
