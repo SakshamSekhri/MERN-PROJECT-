@@ -23,6 +23,8 @@ export default defineConfig({
         gallery: fileURLToPath(new URL('./frontend/gallery.html', import.meta.url)),
         contact: fileURLToPath(new URL('./frontend/contact.html', import.meta.url)),
         guides: fileURLToPath(new URL('./frontend/guides.html', import.meta.url)),
+        privacy: fileURLToPath(new URL('./frontend/privacy.html', import.meta.url)),
+        terms: fileURLToPath(new URL('./frontend/terms.html', import.meta.url)),
       },
     },
   },

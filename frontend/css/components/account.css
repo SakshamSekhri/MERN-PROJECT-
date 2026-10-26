@@ -5,6 +5,8 @@
 .pv-account__dialog > header > span { color: var(--pv-sun-lit); font: 10px/1.8 var(--font-display); }
 .pv-account__close { min-width: 36px; padding: 4px 8px; font-size: 20px; line-height: 1; }
 .pv-account__content { display: grid; gap: 16px; padding: 20px; }
+.pv-account__legal { display: flex; gap: 16px; padding: 0 20px 18px; font-size: 12px; }
+.pv-account__legal a { color: var(--pv-sun-lit); }
 .pv-account__content h3 { color: var(--pv-sun-lit); font: 11px/1.8 var(--font-display); text-transform: uppercase; }
 .pv-account__form { display: grid; gap: 14px; }
 .pv-account__field { display: grid; gap: 7px; }

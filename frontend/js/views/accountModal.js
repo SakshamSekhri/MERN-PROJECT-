@@ -442,7 +442,7 @@ export function initAccount(options) {
   modal = document.createElement('div');
   modal.className = 'pv-account';
   modal.hidden = true;
-  modal.innerHTML = '<div class="pv-account__backdrop"></div><section class="pv-account__dialog" role="dialog" aria-modal="true" aria-label="PixelVerse account"><header><span>PIXELVERSE / ACCOUNT</span><button type="button" class="btn btn--ghost pv-account__close" aria-label="Close account">×</button></header><p class="pv-account__status" role="status" hidden></p><div class="pv-account__content"></div></section>';
+  modal.innerHTML = '<div class="pv-account__backdrop"></div><section class="pv-account__dialog" role="dialog" aria-modal="true" aria-label="PixelVerse account"><header><span>PIXELVERSE / ACCOUNT</span><button type="button" class="btn btn--ghost pv-account__close" aria-label="Close account">×</button></header><p class="pv-account__status" role="status" hidden></p><div class="pv-account__content"></div><footer class="pv-account__legal"><a href="privacy.html" target="_blank" rel="noopener">Privacy</a><a href="terms.html" target="_blank" rel="noopener">Terms</a></footer></section>';
   document.body.appendChild(modal);
   content = modal.querySelector('.pv-account__content');
   status = modal.querySelector('.pv-account__status');

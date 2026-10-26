@@ -192,6 +192,7 @@ Email sign-up is available only when mail delivery, JWT signing, and MongoDB are
 | /gallery.html | Browse and search artwork, view profiles, follow artists, react, comment |
 | /guides.html | Read task guides, play video chapters, launch interactive guides |
 | /contact.html | Send a support message when SMTP is configured |
+| /privacy.html and /terms.html | Read privacy and service terms; both direct questions to Contact |
 
 Local editor data is stored in the browser. Private cloud projects are stored in MongoDB and require authentication. Gallery publication stores its own fixed snapshot with public, unlisted, or private visibility. Public profiles show public artwork and do not expose account email addresses.
 
