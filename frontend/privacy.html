@@ -6,16 +6,27 @@
   <title>PixelVerse — Privacy</title>
   <link href="css/base.css" rel="stylesheet"/>
   <link href="css/components.css" rel="stylesheet"/>
+  <link href="css/views/editor.css" rel="stylesheet"/>
+  <link href="css/views/gallery.css" rel="stylesheet"/>
   <link href="css/views/legal.css" rel="stylesheet"/>
 </head>
-<body class="legal-page">
-  <header class="legal-header"><a href="index.html">PIXEL<span>VERSE</span></a><nav aria-label="Main"><a href="gallery.html">Gallery</a><a href="contact.html">Contact</a></nav></header>
-  <main class="legal-main">
-    <p class="legal-kicker">PIXELVERSE / PRIVACY</p>
-    <h1>Privacy policy</h1>
-    <p class="legal-date">Effective 27 October 2026</p>
-    <p>PixelVerse is an online pixel art editor and Gallery. This page explains the information the service handles. For privacy questions or requests, use the <a href="contact.html">Contact page</a>.</p>
-
+<body class="gallery-page legal-page">
+  <header class="topbar gallery-topbar">
+    <a class="topbar__back" href="index.html" title="Back to home">←</a>
+    <a class="topbar__brand" href="index.html">PIXEL<span class="logo__accent">VERSE</span></a>
+    <span class="topbar__crumb">/ PRIVACY</span>
+    <div class="topbar__spacer"></div>
+    <a class="btn btn--ghost" href="gallery.html">Gallery</a>
+    <a class="btn btn--sun" href="blank.html">Create art</a>
+  </header>
+  <main class="gallery-main legal-main">
+    <div class="gallery-hero">
+      <p class="gallery-kicker">PROJECT INFO</p>
+      <h1>Privacy policy</h1>
+      <p class="legal-date">Effective 27 October 2026</p>
+      <p>PixelVerse is an online pixel art editor and Gallery. This page explains the information the service handles. For privacy questions or requests, use the <a href="contact.html">Contact page</a>.</p>
+    </div>
+    <article class="gallery-panel legal-article">
     <h2>Information you provide</h2>
     <p>When you create an account, we store your email address, display name, and a password hash. We do not store your password in plain text. If you use Google Sign-In, we receive your Google account identifier, email address, and name to identify your account. We do not request access to your Google Drive, contacts, or other Google content.</p>
     <p>If you choose to use cloud features, we store your projects, artwork, and selected profile details. Gallery features also store follows, reactions, comments, bookmarks, reports, and related notifications. A Contact message includes the name, email address, category, and text you submit; it is delivered to our support inbox.</p>
@@ -34,7 +45,8 @@
 
     <h2>Security and changes</h2>
     <p>We use HTTPS, restricted database access, hashed passwords, and session controls to protect the service. No online service can guarantee perfect security. We may update this policy as the service changes and will update the effective date on this page.</p>
+    </article>
+    <nav class="legal-links" aria-label="Related pages"><a class="btn btn--ghost" href="index.html">Home</a><a class="btn btn--ghost" href="terms.html">Terms of service</a><a class="btn btn--ghost" href="contact.html">Contact</a></nav>
   </main>
-  <footer class="legal-footer"><a href="index.html">Home</a><a href="terms.html">Terms of service</a><a href="contact.html">Contact</a></footer>
 </body>
 </html>
