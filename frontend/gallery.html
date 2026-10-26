@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PixelVerse — Gallery</title>
+<link href="css/base.css" rel="stylesheet"/>
+<link href="css/components.css" rel="stylesheet"/>
+<link href="css/views/editor.css" rel="stylesheet"/>
+<link href="css/components/account.css" rel="stylesheet"/>
+<link href="css/views/gallery.css" rel="stylesheet"/>
+<link href="css/components/onboarding.css" rel="stylesheet"/>
+</head>
+<body class="gallery-page">
+<header class="topbar gallery-topbar">
+<a class="topbar__back" href="index.html" title="Back to home">←</a>
+<a class="topbar__brand" href="index.html">PIXEL<span class="logo__accent">VERSE</span></a>
+<span class="topbar__crumb">/ GALLERY</span>
+<div class="topbar__spacer"></div>
+<a class="btn btn--sun" href="blank.html">Create art</a>
+<button class="btn btn--ghost" hidden="" id="gallery-activity-button" type="button">Activity</button>
+<button class="btn btn--ghost" data-account-open="" type="button">Account</button>
+</header>
+<main class="gallery-main">
+<div class="gallery-hero"><p class="gallery-kicker">THE COMMUNITY WALL</p><h1>PixelVerse Gallery</h1>
+<p>Finished pixels and shared stories from artists across PixelVerse.</p></div>
+<p class="gallery-status" hidden="" id="gallery-status" role="status"></p>
+<div id="gallery-view"></div>
+</main>
+<script src="js/gallery.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+.pv-tour-launcher {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 9000;
+  padding: 11px 13px;
+  border: 2px solid var(--pv-void);
+  background: var(--pv-sun);
+  color: var(--pv-void);
+  box-shadow: 5px 5px 0 var(--pv-void);
+  font: 10px/1.4 var(--font-display);
+  cursor: pointer;
+}
+.pv-tour-launcher:hover, .pv-tour-launcher:focus-visible { background: var(--pv-sun-lit); }
+body.is-modal-open .pv-tour-launcher, body.is-modal-open .pv-tour-menu { display: none; }
+.pv-tour-menu {
+  position: fixed;
+  right: 16px;
+  bottom: 66px;
+  z-index: 9001;
+  width: min(290px, calc(100vw - 24px));
+  max-height: min(65vh, 440px);
+  overflow-y: auto;
+  padding: 13px;
+  border: 2px solid var(--pv-void);
+  background: var(--pv-stone-dk);
+  box-shadow: 7px 7px 0 var(--pv-void);
+}
+.pv-tour-menu strong {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--pv-sun-lit);
+  font: 10px/1.5 var(--font-display);
+}
+.pv-tour-menu button, .pv-tour-menu a {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  padding: 10px;
+  border: 2px solid var(--pv-void);
+  background: var(--pv-stone);
+  color: var(--pv-text);
+  text-align: left;
+  text-decoration: none;
+  font: 11px/1.5 var(--font-display);
+  cursor: pointer;
+}
+.pv-tour-menu button:hover, .pv-tour-menu a:hover,
+.pv-tour-menu button:focus-visible, .pv-tour-menu a:focus-visible { border-color: var(--pv-sun-lit); }
+.pv-tour-layer { position: fixed; inset: 0; z-index: 10000; pointer-events: none; }
+.pv-tour-shade {
+  position: fixed;
+  background: rgba(3, 5, 10, .76);
+  pointer-events: auto;
+}
+.pv-tour-focus {
+  position: fixed;
+  border: 3px solid var(--pv-sun-lit);
+  box-shadow: inset 0 0 0 2px var(--pv-void), 0 0 0 2px var(--pv-void);
+  pointer-events: auto;
+}
+.pv-tour-card {
+  position: fixed;
+  z-index: 1;
+  width: min(355px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 17px;
+  border: 3px solid var(--pv-void);
+  background: var(--pv-stone-dk);
+  color: var(--pv-text);
+  box-shadow: 8px 8px 0 var(--pv-void);
+  pointer-events: auto;
+}
+.pv-tour-kicker {
+  display: block;
+  color: var(--pv-sun-lit);
+  font: 9px/1.6 var(--font-display);
+}
+.pv-tour-card h2 {
+  margin: 13px 0 8px;
+  font: 15px/1.5 var(--font-display);
+}
+.pv-tour-card p { margin: 0 0 16px; font: 15px/1.5 var(--font-body); }
+.pv-tour-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.pv-tour-actions .btn { min-height: 34px; padding: 8px 10px; font-size: 10px; }
+.pv-tour-actions .btn:last-child { margin-left: auto; }
+@media (max-width: 699px) {
+  .pv-tour-launcher { right: 12px; bottom: 12px; }
+  .pv-tour-menu { right: 12px; bottom: 60px; }
+  .pv-tour-card { padding: 13px; }
+  .pv-tour-card h2 { font-size: 12px; }
+}
