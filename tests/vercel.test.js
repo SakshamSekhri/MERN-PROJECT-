@@ -18,7 +18,7 @@ test('Vercel maps every API path to the existing Express function', () => {
 test('Postman collection targets a configurable new deployment and covers health, auth and project CRUD', () => {
   const collection = JSON.parse(readFileSync(new URL('../postman/PixelVerse-Evaluation-2.postman_collection.json', import.meta.url), 'utf8'));
   const variables = Object.fromEntries(collection.variable.map(({ key, value }) => [key, value]));
-  assert.match(variables.baseUrl, /your-evaluation-2-app/);
+  assert.equal(variables.baseUrl, 'https://pixelverse-evaluation-2.vercel.app');
   assert.ok(collection.item.every(({ request }) => request.url.startsWith('{{baseUrl}}/api/')));
   const routes = collection.item.map(({ request }) => `${request.method} ${request.url.replace('{{baseUrl}}', '')}`);
   for (const expected of ['GET /api/health', 'POST /api/auth/login', 'POST /api/projects',

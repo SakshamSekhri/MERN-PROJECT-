@@ -254,7 +254,7 @@ The predeployment audit was checked with a clean install, a production build, an
 
 Import postman/PixelVerse-Evaluation-2.postman_collection.json. The collection includes ten ordered requests: health, login, unauthenticated project rejection, create, list, read, update, read updated, delete, and confirm deletion.
 
-Set the collection's baseUrl variable to the **new Evaluation 2 deployment origin** before running it; the placeholder URL is not a live deployment. Put a disposable verified account's email and password in **Postman variables only**. The Login test stores an access token, and Create stores the project ID for later requests. Run the collection in order. Keep passwords and tokens out of screenshots and commits.
+The collection's baseUrl defaults to `https://pixelverse-evaluation-2.vercel.app`; change it if the Evaluation 2 deployment URL changes. Put a disposable verified account's email and password in **Postman variables only**. The Login test stores an access token, and Create stores the project ID for later requests. Run the collection in order. Keep passwords and tokens out of screenshots and commits.
 
 ## Tutorial video
 
@@ -262,6 +262,8 @@ Home and Guides use frontend/public/tutorial/pixelverse-tour-evaluation-2.mp4. T
 
 ## Deployment notes
 
-vercel.json and render.yaml are configuration files. The Vercel rewrite maps `/api/:path*` to the single `api/index.js` function; backend/vercelPath.js restores the Express route path. A persistent server starts at backend/index.js. Production environment validation lives in backend/productionCheck.js. A source commit or push is separate from an intentional deployment. No deployment is performed by the commands in this README.
+vercel.json and render.yaml are configuration files. The Vercel rewrite maps `/api/:path*` to the single `api/index.js` function; backend/vercelPath.js restores the Express route path. A persistent server starts at backend/index.js. Production environment validation lives in backend/productionCheck.js. A source commit or push is separate from an intentional deployment.
+
+The dedicated Vercel project is `pixelverse-evaluation-2`. Its production variables point to a separate MongoDB Atlas project `pixelverse_2`, cluster `pixelverse-2`, and database `pixelverse_2`. Set `MONGO_URI`, `JWT_SECRET`, `CLIENT_ORIGINS`, `APP_ORIGIN`, `GOOGLE_CLIENT_ID`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, and `CONTACT_TO` in Vercel; never commit their secret values. The new Atlas database received 90 existing Evaluation 2 documents across 12 model collections. The one-time copy was verified by document counts and hashes in [GitHub Actions run 40370714354](https://github.com/SakshamSekhri/MERN-PROJECT-/actions/runs/40370714354). The temporary Actions secrets and workflow were removed after migration. `scripts/migrate-evaluation-2-data.mjs` remains for audit and controlled recovery.
 
 For a short presentation path and MVC talking points, see [EVALUATION_2.md](EVALUATION_2.md).

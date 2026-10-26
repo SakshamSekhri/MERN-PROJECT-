@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "PixelVerse — Evaluation 2 deployed API CRUD",
-    "description": "Set collection variable baseUrl to the new Evaluation 2 deployment origin (for example, https://your-evaluation-2-app.vercel.app) before running. Use a disposable verified account. Run the requests in order; the final request confirms deletion of the demo project. Keep passwords and access tokens out of screenshots and Git.",
+    "description": "The baseUrl defaults to the Evaluation 2 Vercel deployment. Change it if the deployment URL changes. Use a disposable verified account. Run the requests in order; the final request confirms deletion of the demo project. Keep passwords and access tokens out of screenshots and Git.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -17,7 +17,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://your-evaluation-2-app.vercel.app"
+      "value": "https://pixelverse-evaluation-2.vercel.app"
     },
     {
       "key": "email",
