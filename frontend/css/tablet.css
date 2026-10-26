@@ -1,0 +1,346 @@
+/* ═══════════════════════════════════════════════
+   PixelVerse — Tablet / iPad Responsive Overrides
+   Target: 768px – 1199px (iPad mini → iPad Pro)
+   Goal: Match the laptop layout exactly on tablets.
+   ═══════════════════════════════════════════════
+
+   Strategy: The desktop layout works perfectly above
+   ~1200px. Below 900px the existing code collapses
+   everything to a single column (mobile). Tablets sit
+   in the 768–1199px gap and used to fall into the
+   mobile-collapse zone. These rules restore the full
+   laptop experience for that range.
+*/
+
+/* ─────────────────────────────────────────────
+   VIEWPORT META is the first requirement.
+   blank.html and image.html already have it added
+   (see <meta name="viewport"> in those files).
+   ───────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════
+   1. EDITOR VIEW — three-column workspace
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  /* ── Responsive rail widths on tablets ── */
+  .rail {
+    width: 190px;
+    min-width: 190px;
+    max-width: 190px;
+  }
+
+  /* Undo the mobile single-column collapse */
+  .rail--left,
+  .rail--right {
+    border: none;
+    border-top: none;
+  }
+  .rail--left  { border-right: var(--border) solid var(--line); }
+  .rail--right { border-left:  var(--border) solid var(--line); }
+
+  /* Tools: keep vertical list, hide kbd hints to save space */
+  .toolset {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .tool kbd { display: none; }
+
+  /* Topbar: keep horizontal, tighten gaps */
+  .topbar {
+    gap: var(--s2);
+    padding: var(--s2) var(--s3);
+    flex-wrap: wrap;
+  }
+  .topbar__crumb { display: block; }
+
+  /* Filmstrip: keep full width */
+  .filmstrip {
+    max-width: 100%;
+  }
+  .filmstrip__head {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* Reference panel in the editor: keep side-by-side */
+  .refpanel {
+    width: 220px;
+    flex-shrink: 0;
+  }
+  #ref-canvas {
+    width: 196px;
+    height: 196px;
+  }
+  .refpanel__scroll {
+    max-height: 260px;
+  }
+
+  /* Onion skin — keep as normal column */
+  .onion { flex-direction: column; }
+
+}
+
+@media (min-width: 1000px) and (max-width: 1100px) {
+  .stage__row { flex-direction: row; }
+  .refpanel { width: 220px; }
+}
+
+/* Narrow tablet (768–899px): slightly tighter rails */
+@media (min-width: 768px) and (max-width: 899px) {
+
+  .rail {
+    width: 170px;
+    min-width: 170px;
+    max-width: 170px;
+    padding: var(--s3);
+  }
+
+  .refpanel { width: min(100%, 320px); }
+
+}
+
+/* ═══════════════════════════════════════════════
+   2. STUDIO VIEW — animation preview + transport
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  /* Studio strip: keep header in one row */
+  .studio-strip__head {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* Studio toolbar: keep horizontal */
+  .studio-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .studio-colors {
+    flex-wrap: nowrap;
+  }
+
+  /* Info panel: keep multi-column grid */
+  .info {
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  }
+
+}
+
+/* ═══════════════════════════════════════════════
+   3. REFERENCE VIEW — drop zone + two-up grid
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  /* Keep the 2-column ref grid */
+  .ref-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #ref-preview {
+    width: min(100%, 320px);
+    height: auto;
+  }
+
+  /* Ref options panel: allow wrapping but stay 2-up */
+  .ref-options {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+
+}
+
+/* Only collapse ref-grid on very narrow tablets */
+@media (min-width: 768px) and (max-width: 820px) {
+  .ref-grid { grid-template-columns: 1fr; }
+  #ref-preview { width: 100%; height: auto; aspect-ratio: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   4. LANDING VIEW
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  /* Keep the 2-column choice grid */
+  .choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 280px));
+  }
+
+  .logo {
+    font-size: clamp(32px, 5vw, 48px);
+  }
+
+}
+
+/* ═══════════════════════════════════════════════
+   5. TOPBAR / SAVE STATUS
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  /* Show save status (hidden below 700px by save.css) */
+  .save-status { display: block; }
+
+  /* Restore bar: keep horizontal */
+  .restore-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+}
+
+/* ═══════════════════════════════════════════════
+   6. SAVE / EXPORT MODAL
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  .save-modal__sheet {
+    max-width: 680px;
+  }
+
+  /* Keep the 2-column tab layout */
+  .save-modal__tabs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Keep side-by-side panel layout */
+  .save-modal__panel-layout {
+    grid-template-columns: 1fr 180px;
+  }
+
+  /* Keep 3-column format buttons */
+  .save-modal__format-group {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .save-modal__format-group--4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+}
+
+/* ═══════════════════════════════════════════════
+   7. REPLAY OVERLAY
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+
+  #replay-canvas {
+    width: min(100%, 56dvh, 480px);
+    height: auto;
+  }
+
+  .replay__sheet {
+    max-width: 680px;
+    padding: var(--s4);
+  }
+
+}
+
+/* ═══════════════════════════════════════════════
+   8. TOUCH / POINTER IMPROVEMENTS FOR TABLETS
+   These apply regardless of viewport size when a
+   coarse pointer (finger) is the primary input.
+   ═══════════════════════════════════════════════ */
+
+@media (pointer: coarse) {
+
+  /* Larger tap targets for toolbar buttons */
+  .tool {
+    padding: var(--s3) var(--s3);
+    min-height: 40px;
+  }
+
+  /* Slightly larger swatch tap area */
+  .swatch {
+    min-width: 22px;
+    min-height: 22px;
+  }
+
+  /* Frame items in the filmstrip: bigger touch target */
+  .frame-item {
+    padding: var(--s2);
+  }
+
+  /* Depth toggle buttons */
+  .depth {
+    width: 32px;
+    padding: 4px 0;
+  }
+
+  /* FPS buttons */
+  .fps {
+    padding: var(--s2) var(--s3);
+    min-width: 40px;
+  }
+
+  /* Btn defaults: +4px vertical padding for finger taps */
+  .btn {
+    padding: calc(var(--s2) + 2px) var(--s3);
+  }
+
+  .btn--sm {
+    padding: var(--s1) var(--s2);
+  }
+
+  /* Range/scrub sliders: taller thumb for touch */
+  .range::-webkit-slider-thumb {
+    width: 18px;
+    height: 24px;
+  }
+  .range::-moz-range-thumb {
+    width: 18px;
+    height: 24px;
+  }
+
+  .replay__scrub::-webkit-slider-thumb {
+    width: 16px;
+    height: 28px;
+  }
+  .replay__scrub::-moz-range-thumb {
+    width: 16px;
+    height: 28px;
+  }
+
+}
+
+/* ═══════════════════════════════════════════════
+   9. LANDSCAPE TABLET — keep canvas bigger
+   ═══════════════════════════════════════════════ */
+
+@media (min-width: 900px) and (max-width: 1199px) and (orientation: landscape) {
+
+  .editor {
+    grid-template-columns: 190px 1fr 190px;
+  }
+
+  #paint-canvas {
+    width: min(58vh, 520px);
+    height: min(58vh, 520px);
+  }
+
+  #studio-canvas {
+    width: min(44vh, 360px);
+    height: min(44vh, 360px);
+  }
+
+}
+
+/* iPad Pro 12.9" in landscape — close to laptop, keep full desktop */
+@media (min-width: 1024px) and (max-width: 1199px) {
+
+  .editor {
+    grid-template-columns: 200px 1fr 200px;
+  }
+
+  #paint-canvas {
+    width: min(60vh, 560px);
+    height: min(60vh, 560px);
+  }
+
+}
