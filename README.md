@@ -1,12 +1,31 @@
-# PixelVerse — Evaluation 2
+# 🎮 PixelVerse
 
-PixelVerse is a browser-based pixel art studio. You can draw on a grid, make frame animations, convert an image into a drawing reference, save work locally, and export it. With an account, you can keep private projects in MongoDB, publish fixed copies to the Gallery, and build an artist profile.
+### Evaluation 2 · Draw pixels. Animate frames. Share your art.
 
-This repository contains the **Evaluation 2 source**: a Vite frontend, an Express API, Mongoose models, tests, a Postman collection, and the Evaluation 2 walkthrough video. The frontend calls the API through the same-origin /api path; database credentials stay on the server.
+`Vite` · `Express 5` · `MongoDB Atlas` · `Vercel` · `Postman`
+
+**[🚀 Launch the live app](https://pixelverse-evaluation-2.vercel.app)** · **[🎨 Open the editor](https://pixelverse-evaluation-2.vercel.app/blank.html)** · **[🖼️ Explore the Gallery](https://pixelverse-evaluation-2.vercel.app/gallery.html)** · **[▶️ Watch the tour](https://pixelverse-evaluation-2.vercel.app/tutorial/pixelverse-tour-evaluation-2.mp4)**
+
+[![PixelVerse Evaluation 2 homepage and tutorial poster](frontend/public/tutorial/pixelverse-tour-evaluation-2-poster.png)](https://pixelverse-evaluation-2.vercel.app)
+
+PixelVerse is a browser-based pixel art studio with drawing tools, frame animation, image references, local recovery, cloud projects, publishing, a Gallery, and artist profiles. The repository keeps the **frontend and Express/MVC backend together** with MongoDB models, tests, a Postman collection, and the Evaluation 2 tutorial.
+
+| Live destination | What you can try |
+| --- | --- |
+| [Home](https://pixelverse-evaluation-2.vercel.app) | Explore the project and start creating |
+| [Editor](https://pixelverse-evaluation-2.vercel.app/blank.html) | Draw, animate, save, and publish |
+| [Gallery](https://pixelverse-evaluation-2.vercel.app/gallery.html) | Browse artwork and artist profiles |
+| [Guides](https://pixelverse-evaluation-2.vercel.app/guides.html) | Follow walkthroughs and video chapters |
+| [Privacy](https://pixelverse-evaluation-2.vercel.app/privacy.html) · [Terms](https://pixelverse-evaluation-2.vercel.app/terms.html) | Read the public policy and service pages |
+| [API health](https://pixelverse-evaluation-2.vercel.app/api/health) | Check the deployed API and database connection |
+
+> [!NOTE]
+> Drawing and local saves work without an account. Cloud saving, publishing, and social actions need a verified account. The browser uses same-origin `/api` requests; MongoDB credentials stay on the server.
 
 ## Contents
 
 - [Features](#features)
+- [Try the main flows](#try-the-main-flows)
 - [Architecture](#architecture)
 - [Project structure](#project-structure)
 - [Run locally](#run-locally)
@@ -18,6 +37,7 @@ This repository contains the **Evaluation 2 source**: a Vite frontend, an Expres
 - [Postman walkthrough](#postman-walkthrough)
 - [Tutorial video](#tutorial-video)
 - [Deployment notes](#deployment-notes)
+- [Troubleshooting](#troubleshooting)
 
 ## Features
 
@@ -36,6 +56,24 @@ This repository contains the **Evaluation 2 source**: a Vite frontend, an Expres
 
 Drawing and local saving work without an account. Cloud saving, publishing, follows, saved art, reactions, comments, and activity require a verified account and a connected API.
 
+**Where your work lives**
+
+| Kind of work | Stored in | Who can access it |
+| --- | --- | --- |
+| Local drawing and recovery | This browser | The person using that browser profile |
+| Cloud project | MongoDB through the API | Its signed-in owner |
+| Published artwork | A separate Gallery snapshot in MongoDB | According to its public, unlisted, or private visibility |
+
+Updating a cloud project does not silently change an artwork that was already published.
+
+## Try the main flows
+
+1. **Create:** Open the [editor](https://pixelverse-evaluation-2.vercel.app/blank.html), choose a grid, draw with pencil/fill/eraser, and add frames. Studio plays the animation.
+2. **Keep your work:** Save in the browser or export it. Sign in to save a private cloud project that you can reopen on another device.
+3. **Share:** Publish a fixed artwork copy with a title, tags, cover frame, and visibility. Find it in the [Gallery](https://pixelverse-evaluation-2.vercel.app/gallery.html), then visit its artist profile.
+
+The [Evaluation 2 tour](https://pixelverse-evaluation-2.vercel.app/tutorial/pixelverse-tour-evaluation-2.mp4) demonstrates these flows with captions and chapter links on the [Guides page](https://pixelverse-evaluation-2.vercel.app/guides.html).
+
 ## Architecture
 
 - **Frontend:** HTML, CSS, browser JavaScript modules, and Vite.
@@ -44,14 +82,19 @@ Drawing and local saving work without an account. Cloud saving, publishing, foll
 - **Email:** Nodemailer for verification, password reset, and Contact messages.
 - **Tests:** Node's built-in test runner and a Postman collection.
 
-The MVC organization separates Mongoose schemas in backend/models/ (**models**), browser pages and modules in frontend/ (**views**), request handlers in backend/controllers/ (**controllers**), and HTTP method, path, authentication, and rate-limit declarations in backend/routes/. backend/routes/index.js mounts the API. backend/auth.js only re-exports account helpers used by existing integrations.
+The MVC organization separates Mongoose schemas in `backend/models/` (**models**), browser pages and modules in `frontend/` (**views**), request handlers in `backend/controllers/` (**controllers**), and HTTP method, path, authentication, and rate-limit declarations in `backend/routes/`. `backend/routes/index.js` mounts the API. `backend/auth.js` re-exports account helpers used by existing integrations.
 
-A cloud project request follows this path:
+```mermaid
+flowchart LR
+    Browser[Browser / Vite frontend] -->|same-origin /api| Entry[Express API]
+    Entry --> Routes[Routes and auth middleware]
+    Routes --> Controllers[Controllers]
+    Controllers --> Models[Mongoose models]
+    Models --> Atlas[(MongoDB Atlas)]
+    Controllers --> Mail[SMTP email]
+```
 
-~~~text
-Browser editor -> /api/projects -> Express auth middleware
-               -> projects controller -> Mongoose Canvas model -> MongoDB
-~~~
+Locally, `backend/index.js` starts Express. On Vercel, `api/index.js` exposes the same app through one serverless function. The `/api/:path*` rewrite in `vercel.json` restores nested Express routes.
 
 Publishing creates a separate artwork snapshot. Editing its source canvas later does not change the Gallery post.
 
@@ -68,11 +111,12 @@ pixelverse/
 |   |-- gallery.html                  # Gallery and artist profiles
 |   |-- guides.html                   # Help and video chapters
 |   |-- contact.html                  # Contact form
+|   |-- privacy.html, terms.html      # Public policy and service pages
 |   |-- google-bridge.html            # Google sign-in return flow
 |   |-- css/
 |   |   |-- base.css, components.css, tablet.css
 |   |   |-- components/              # Account, save, replay, onboarding UI
-|   |   +-- views/                   # Page-specific styles
+|   |   +-- views/                   # Page-specific styles, including legal.css
 |   |-- js/
 |   |   |-- main.js, blank.js, image.js, gallery.js
 |   |   |-- canvas/                  # Grid, rendering, drawing tools, history
@@ -96,7 +140,7 @@ pixelverse/
 |   |-- routes/                      # HTTP paths, auth middleware, rate limits, route mounting
 |   +-- projectSnapshot.js           # Freeze and thumbnail publications
 |-- api/index.js                      # Vercel function entry for Express
-|-- scripts/                           # Local startup, gallery examples, moderator tool
+|-- scripts/                          # Local startup, moderation, and data migration
 |-- tests/                             # Unit and database integration tests
 |-- postman/
 |   +-- PixelVerse-Evaluation-2.postman_collection.json
@@ -133,7 +177,7 @@ PORT=4000
 MONGO_URI=mongodb://127.0.0.1:27017/pixelverse
 JWT_SECRET=<replace-with-a-unique-private-value-of-at-least-32-characters>
 CLIENT_ORIGINS=http://127.0.0.1:5173
-APP_ORIGIN=http://127.0.0.1:5173
+APP_ORIGIN=http://127.0.0.1:5173/blank.html
 ~~~
 
 Replace the JWT_SECRET placeholder with your own random value. Do not commit .env. For Atlas, set MONGO_URI to the server connection string in that private file. Email and Google features need the additional variables below.
@@ -253,18 +297,32 @@ The predeployment audit was checked with a clean install, a production build, an
 
 ## Postman walkthrough
 
-Import postman/PixelVerse-Evaluation-2.postman_collection.json. The collection includes ten ordered requests: health, login, unauthenticated project rejection, create, list, read, update, read updated, delete, and confirm deletion.
+Import the [Evaluation 2 Postman collection](postman/PixelVerse-Evaluation-2.postman_collection.json). It includes ten ordered requests: health, login, unauthenticated project rejection, create, list, read, update, read updated, delete, and confirm deletion.
 
 The collection's baseUrl defaults to `https://pixelverse-evaluation-2.vercel.app`; change it if the Evaluation 2 deployment URL changes. Put a disposable verified account's email and password in **Postman variables only**. The Login test stores an access token, and Create stores the project ID for later requests. Run the collection in order. Keep passwords and tokens out of screenshots and commits.
 
 ## Tutorial video
 
-Home and Guides use frontend/public/tutorial/pixelverse-tour-evaluation-2.mp4. The same folder contains the poster, English captions (.vtt), and chapter times (.json). Guides uses those chapter times for its jump buttons. The video covers drawing, Studio, image references, accounts, cloud saving, publishing, Gallery, and profiles.
+Home and Guides use the [Evaluation 2 tutorial video](https://pixelverse-evaluation-2.vercel.app/tutorial/pixelverse-tour-evaluation-2.mp4) from `frontend/public/tutorial/`. The same folder contains its poster, English captions (`.vtt`), and chapter times (`.json`). Guides uses those chapter times for jump buttons. The video covers drawing, Studio, image references, accounts, cloud saving, publishing, Gallery, and profiles.
 
 ## Deployment notes
 
-vercel.json and render.yaml are configuration files. The Vercel rewrite maps `/api/:path*` to the single `api/index.js` function; backend/vercelPath.js restores the Express route path. A persistent server starts at backend/index.js. Production environment validation lives in backend/productionCheck.js. A source commit or push is separate from an intentional deployment.
+**Production URL:** [pixelverse-evaluation-2.vercel.app](https://pixelverse-evaluation-2.vercel.app). The [health endpoint](https://pixelverse-evaluation-2.vercel.app/api/health) should return `database: connected` when the API and Atlas are available.
+
+`vercel.json` maps `/api/:path*` to the single `api/index.js` function; `backend/vercelPath.js` restores the Express route path. `backend/index.js` starts a persistent local server. `backend/productionCheck.js` validates production settings. `render.yaml` remains an alternative deployment configuration.
 
 The dedicated Vercel project is `pixelverse-evaluation-2`. Its production variables point to a separate MongoDB Atlas project `pixelverse_2`, cluster `pixelverse-2`, and database `pixelverse_2`. Set `MONGO_URI`, `JWT_SECRET`, `CLIENT_ORIGINS`, `APP_ORIGIN`, `GOOGLE_CLIENT_ID`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, and `CONTACT_TO` in Vercel; never commit their secret values. The new Atlas database received 90 existing Evaluation 2 documents across 12 model collections. The one-time copy was verified by document counts and hashes in [GitHub Actions run 40370714354](https://github.com/SakshamSekhri/MERN-PROJECT-/actions/runs/40370714354). The temporary Actions secrets and workflow were removed after migration. `scripts/migrate-evaluation-2-data.mjs` remains for audit and controlled recovery.
+
+This Vercel project was deployed from the linked checkout with Vercel CLI. A GitHub push does **not** automatically update the live site; deploy the intended commit to the linked `pixelverse-evaluation-2` project and verify the production URL afterward. Google Sign-In also needs the production URL in the Google OAuth client's authorized JavaScript origins, and its audience must include the people who should sign in.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| `/api/health` returns 503 | Confirm `MONGO_URI`, the Atlas database user, and the Atlas network access list. |
+| Email registration or Contact is unavailable | Confirm SMTP variables and `MAIL_FROM`; check the API response and server logs. |
+| Google button says the origin is not allowed | Add the exact deployed origin to the OAuth client's authorized JavaScript origins. |
+| Postman returns 401 for project requests | Log in first with a verified disposable account and run the collection in order. |
+| A GitHub change is missing from the live site | Check which commit was deployed to the linked Vercel project; pushing alone does not deploy this project. |
 
 For a short presentation path and MVC talking points, see [EVALUATION_2.md](EVALUATION_2.md).
