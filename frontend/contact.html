@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PixelVerse — Contact</title>
+<link href="css/base.css" rel="stylesheet"/>
+<link href="css/components.css" rel="stylesheet"/>
+<link href="css/views/editor.css" rel="stylesheet"/>
+<link href="css/views/gallery.css" rel="stylesheet"/>
+<link href="css/views/contact.css" rel="stylesheet"/>
+</head>
+<body class="gallery-page">
+<header class="topbar gallery-topbar">
+<a class="topbar__back" href="index.html" title="Back to home">←</a>
+<a class="topbar__brand" href="index.html">PIXEL<span class="logo__accent">VERSE</span></a>
+<span class="topbar__crumb">/ CONTACT</span>
+<div class="topbar__spacer"></div>
+<a class="btn btn--ghost" href="gallery.html">Gallery</a>
+<a class="btn btn--sun" href="blank.html">Create art</a>
+</header>
+<main class="gallery-main">
+<div class="gallery-hero">
+<p class="gallery-kicker">PLAYER SUPPORT</p>
+<h1>Contact PixelVerse</h1>
+<p>Found a bug or have an idea? Send a message to the PixelVerse team.</p>
+</div>
+<div class="contact-layout">
+<section aria-labelledby="contact-heading" class="gallery-panel">
+<h2 class="gallery-section-title" id="contact-heading">Send a message</h2>
+<form class="contact-form" id="contact-form">
+<label for="contact-name">Your name</label>
+<input autocomplete="name" id="contact-name" maxlength="80" minlength="2" name="name" required=""/>
+<label for="contact-email">Email for a reply</label>
+<input autocomplete="email" id="contact-email" maxlength="254" name="email" required="" type="email"/>
+<label for="contact-category">What is this about?</label>
+<select id="contact-category" name="category" required="">
+<option value="">Choose a category</option>
+<option value="bug">A bug</option>
+<option value="account">My account</option>
+<option value="feedback">Feedback or an idea</option>
+<option value="other">Something else</option>
+</select>
+<label for="contact-message">Your message</label>
+<textarea id="contact-message" maxlength="4000" minlength="10" name="message" placeholder="Tell us what happened or what you would like to see." required="" rows="8"></textarea>
+<div aria-hidden="true" class="contact-honeypot">
+<label for="contact-website">Website</label>
+<input autocomplete="off" id="contact-website" name="website" tabindex="-1"/>
+</div>
+<p class="contact-hint">For bugs, include the page and steps to reproduce it. Please do not send passwords or app passwords.</p>
+<p aria-live="polite" class="contact-status" hidden="" id="contact-status" role="status"></p>
+<button class="btn btn--sun" id="contact-submit" type="submit">Send message</button>
+</form>
+</section>
+<aside aria-label="More ways to get help" class="contact-side">
+<div class="gallery-panel">
+<span class="gallery-badge">NEED A HAND?</span>
+<h2>Keep creating</h2>
+<p>Follow the drawing and saving guides, including what to do when cloud services are unavailable.</p>
+<a class="btn btn--ghost" href="guides.html">Read guides</a>
+</div>
+<div class="gallery-panel">
+<span class="gallery-badge">COMMUNITY</span>
+<h2>Explore PixelVerse</h2>
+<p>Browse shared art in the Gallery.</p>
+<div class="contact-links"><a href="gallery.html">Gallery →</a></div>
+</div>
+</aside>
+</div>
+</main>
+<script src="js/contact.js" type="module"></script>
+</body>
+</html>

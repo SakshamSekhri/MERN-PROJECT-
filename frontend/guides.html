@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PixelVerse — Guides</title>
+<link href="css/base.css" rel="stylesheet"/>
+<link href="css/components.css" rel="stylesheet"/>
+<link href="css/views/editor.css" rel="stylesheet"/>
+<link href="css/views/gallery.css" rel="stylesheet"/>
+<link href="css/views/guides.css" rel="stylesheet"/>
+
+</head>
+<body class="gallery-page" id="top">
+<header class="topbar gallery-topbar">
+<a class="topbar__back" href="index.html" title="Back to home">←</a>
+<a class="topbar__brand" href="index.html">PIXEL<span class="logo__accent">VERSE</span></a>
+<span class="topbar__crumb">/ GUIDES</span>
+<div class="topbar__spacer"></div>
+<a class="btn btn--ghost" href="contact.html">Contact</a>
+<a class="btn btn--sun" href="blank.html">Open canvas</a>
+</header>
+<main class="gallery-main guides-main">
+<div class="gallery-hero">
+<p class="gallery-kicker">PLAYER HANDBOOK</p>
+<h1>PixelVerse Guides</h1>
+<p>Pick a task, follow a few steps, and get back to drawing.</p>
+</div>
+<section aria-labelledby="guides-video-title" class="gallery-panel guides-video">
+<p class="gallery-kicker">WATCH THE APP IN ACTION</p>
+<h2 id="guides-video-title">PixelVerse video tour</h2>
+<p>Watch real PixelVerse interactions: drawing, Studio, image conversion, account sign-in, cloud saving, publishing, Gallery, and artist profiles.</p>
+<video aria-label="PixelVerse guided walkthrough video" controls="" data-pixelverse-tour="" playsinline="" poster="/tutorial/pixelverse-tour-evaluation-2-poster.png" preload="metadata">
+<source src="/tutorial/pixelverse-tour-evaluation-2.mp4" type="video/mp4"/>
+<track kind="captions" label="English" src="/tutorial/pixelverse-tour-evaluation-2.vtt" srclang="en"/>
+        Your browser does not support video.
+      </video>
+<div aria-label="Jump to a video chapter" class="guides-video__chapters">
+<button class="btn btn--ghost btn--sm" data-tour-scene="canvas" disabled="" type="button">Canvas</button>
+<button class="btn btn--violet btn--sm" data-tour-scene="studio" disabled="" type="button">Studio</button>
+<button class="btn btn--cyan btn--sm" data-tour-scene="image" disabled="" type="button">Images</button>
+<button class="btn btn--ghost btn--sm" data-tour-scene="save" disabled="" type="button">Save &amp; account</button>
+<button class="btn btn--ghost btn--sm" data-tour-scene="gallery" disabled="" type="button">Gallery &amp; profiles</button>
+
+
+</div>
+<p class="guides-video__note">The footage records real actions in a separate demo workspace. For hands-on help, start one of the guided tours below.</p>
+</section>
+<section aria-labelledby="guided-tours-title" class="gallery-panel guides-tours">
+<p class="gallery-kicker">INTERACTIVE HELP</p>
+<h2 id="guided-tours-title">Replay a guided tour</h2>
+<p>Open a page with a short guide pointing to its controls. You can also use the floating Guide button on that page.</p>
+<div class="guides-tours__links">
+<a class="btn btn--sun" href="blank.html?tour=canvas-basics">Canvas basics</a>
+<a class="btn btn--ghost" href="blank.html?tour=canvas-explore">More editor tools</a>
+<a class="btn btn--violet" href="blank.html?view=studio&amp;tour=studio">PixelVerse Studio</a>
+<a class="btn btn--cyan" href="image.html?tour=reference-upload">Create from image</a>
+<a class="btn btn--ghost" href="gallery.html?tour=gallery">Gallery</a>
+
+
+</div>
+</section>
+<nav aria-label="Guide topics" class="guides-jump">
+<a href="#drawing"><span>01</span> Draw &amp; animate</a>
+<a href="#saving"><span>02</span> Save your work</a>
+<a href="#reference"><span>03</span> Draw from an image</a>
+
+<a href="#publishing"><span>05</span> Share your art</a>
+
+
+</nav>
+<div class="guides-layout">
+<div class="guides-content">
+<section aria-labelledby="drawing-title" class="gallery-panel guide-section" id="drawing">
+<p class="gallery-kicker">GUIDE 01 / THE CANVAS</p>
+<h2 id="drawing-title">Draw &amp; animate</h2>
+<ol>
+<li>Open the <a href="blank.html">blank canvas</a> and choose a grid size from the top bar.</li>
+<li>Choose a colour on the right. Use Pencil to draw, Eraser to remove pixels, Fill to colour an area, or Picker to reuse a colour.</li>
+<li>Add or duplicate frames below the canvas to make an animation. Turn on Onion skin to see earlier frames faintly while drawing.</li>
+<li>Use Undo and Redo for changes, or Replay to watch how your local artwork was built.</li>
+</ol>
+<p class="guide-note">Tip: choose your grid size before you start drawing; add frames when you want to animate.</p>
+</section>
+<section aria-labelledby="saving-title" class="gallery-panel guide-section" id="saving">
+<p class="gallery-kicker">GUIDE 02 / KEEP YOUR PIXELS</p>
+<h2 id="saving-title">Save your work</h2>
+<ol>
+<li>Press <strong>Save</strong> in the editor to save a copy in this browser. Local drawing and saving also work without an account.</li>
+<li>To keep a private project in your account, open Save and choose <strong>Save to Cloud</strong>. Sign in if asked.</li>
+<li>Use <strong>Open Cloud Project</strong> to continue a cloud project. PixelVerse creates a separate local recovery copy of your current canvas before opening it.</li>
+<li>Use the export option in Save for a file you can keep or move to another browser.</li>
+<li>To remove a cloud save, press the <strong>×</strong> beside its name in Account and confirm. Your open canvas stays as it is.</li>
+</ol>
+<p class="guide-note">Local browser saves stay on that browser. Use cloud saving or export when you want a copy elsewhere.</p>
+</section>
+<section aria-labelledby="reference-title" class="gallery-panel guide-section" id="reference">
+<p class="gallery-kicker">GUIDE 03 / PIXEL REFERENCE</p>
+<h2 id="reference-title">Draw from an image</h2>
+<ol>
+<li>Choose <a href="image.html">Create from image</a> and upload a picture from your device.</li>
+<li>Adjust the conversion until the pixel reference looks useful, then press <strong>Use as reference</strong>.</li>
+<li>Draw your own pixels in the editor. Show the reference, trace underneath it, or use <strong>Compare with reference</strong> to check your work.</li>
+</ol>
+<p class="guide-note">The uploaded picture becomes a drawing reference. It does not automatically become your finished artwork. Compare scores the painted reference and extra pixels; empty bands around a fitted image do not earn points.</p>
+</section>
+
+<section aria-labelledby="publishing-title" class="gallery-panel guide-section" id="publishing">
+<p class="gallery-kicker">GUIDE 05 / GALLERY</p>
+<h2 id="publishing-title">Share your art</h2>
+<ol>
+<li>Sign in and press <strong>Publish</strong> in either editor. Choose a title, description, up to five tags, and visibility.</li>
+<li>Open the <a href="gallery.html">Gallery</a> to see public artwork. A published post is a fixed copy; later canvas edits do not change it.</li>
+<li>Open an artwork to react or comment. You can manage the visibility of your own post later.</li>
+<li>Search artwork by title, description, or tag. Open a post and press <strong>Save art</strong>; your private <strong>Saved art</strong> tab keeps a list of posts to revisit.</li>
+<li>Use artist search to find people by name or username. Open a profile to see public artwork. Click its follower or following count to browse artists and follow them from the list.</li>
+<li>Open <strong>Following</strong> in the Gallery to see public posts from artists you follow. Use <strong>View my profile</strong> in Account to choose your username, add a bio, and select public artwork for your pixel avatar and featured piece.</li>
+<li>Open Activity in the Gallery or the canvas Community menu to see new followers, likes, and comments.</li>
+</ol>
+<p class="guide-note">Publishing creates a fixed copy, so you can keep editing your canvas after sharing.</p>
+</section>
+
+
+</div>
+<aside aria-label="More help" class="guides-side">
+<div class="gallery-panel">
+<span class="gallery-badge">QUICK HELP</span>
+<h2>Common questions</h2>
+<details><summary>Do I need an account to draw?</summary><p>No. You can draw and save locally without signing in. Sign in for cloud projects and publishing.</p></details>
+<details><summary>Why can’t I use cloud features?</summary><p>Cloud features need an account and a working connection to the PixelVerse server. Your local canvas can still be used when the server is unavailable.</p></details>
+
+</div>
+<div class="gallery-panel guides-help">
+<span class="gallery-badge">STILL STUCK?</span>
+<h2>Talk to us</h2>
+<p>Tell us which page you were on and what happened. A screenshot can help with visual bugs.</p>
+<a class="btn btn--cyan" href="contact.html">Contact support</a>
+</div>
+</aside>
+</div>
+<a class="guides-top" href="#top">↑ Back to top</a>
+</main>
+<script>
+    const tourVideo = document.querySelector('.guides-video video');
+    document.addEventListener('DOMContentLoaded', () => fetch('/tutorial/pixelverse-tour-evaluation-2-chapters.json')
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('Chapters unavailable')))
+      .then(chapters => {
+        document.querySelectorAll('[data-tour-scene]').forEach(button => {
+          const time = chapters[button.dataset.tourScene];
+          if (!Number.isFinite(time)) return;
+          button.disabled = false;
+          button.addEventListener('click', () => {
+            tourVideo.currentTime = time;
+            tourVideo.play();
+          });
+        });
+      }).catch(() => {}));
+  </script>
+</body>
+</html>

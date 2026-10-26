@@ -1,0 +1,17 @@
+.contact-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(250px, .75fr); gap: 24px; align-items: start; }
+.contact-form { display: grid; gap: 11px; margin-top: 18px; }
+.contact-form label { color: var(--pv-sun-lit); font: 10px/1.7 var(--font-display); }
+.contact-form input, .contact-form select, .contact-form textarea { width: 100%; padding: 12px; border: 2px solid var(--pv-ink); border-radius: 0; color: var(--pv-text); background: var(--pv-sky); font: 16px/1.5 var(--font-body); }
+.contact-form textarea { resize: vertical; min-height: 150px; }
+.contact-form input:focus-visible, .contact-form select:focus-visible, .contact-form textarea:focus-visible, .contact-links a:focus-visible { outline: 2px solid var(--pv-sun-lit); outline-offset: 2px; }
+.contact-form .btn { justify-self: start; margin-top: 7px; }
+.contact-form .btn:disabled { opacity: .6; cursor: wait; }
+.contact-hint { color: var(--pv-muted); font-size: 14px; margin: 4px 0; }
+.contact-honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.contact-status { padding: 12px; margin: 0; border: 2px solid var(--pv-sun); background: var(--pv-sky); }
+.contact-status[data-kind="error"] { border-color: var(--danger); }
+.contact-side h2 { color: var(--pv-text); font: 13px/1.7 var(--font-display); margin: 14px 0; }
+.contact-side p { color: var(--pv-muted); line-height: 1.5; }
+.contact-links { display: flex; flex-wrap: wrap; gap: 16px; }
+.contact-links a { color: var(--pv-sun-lit); }
+@media (max-width: 760px) { .contact-layout { grid-template-columns: 1fr; } }
