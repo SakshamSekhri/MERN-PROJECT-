@@ -1,17 +1,8 @@
-import { Router } from 'express';
-import { rateLimit } from 'express-rate-limit';
-import { sendContactMail } from './mail.js';
+import { sendContactMail } from '../mail.js';
 
-export const contactRouter = Router();
 const categories = new Set(['bug', 'account', 'feedback', 'other']);
 
-contactRouter.post('/', rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 5,
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-  message: { error: 'Too many messages. Please try again later.' },
-}), async (request, response) => {
+export async function submitContact(request, response) {
   const { name, email, category, message, website } = request.body ?? {};
   if (website) return response.status(202).json({ message: 'Message sent.' });
   if (typeof name !== 'string' || typeof email !== 'string' ||
@@ -28,4 +19,4 @@ contactRouter.post('/', rateLimit({
 
   await sendContactMail({ name: cleanName, email: cleanEmail, category, message: cleanMessage });
   response.status(202).json({ message: 'Message sent.' });
-});
+}

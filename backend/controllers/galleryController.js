@@ -1,11 +1,8 @@
-import { Router } from 'express';
 import mongoose from 'mongoose';
-import { requireAuth } from './auth.js';
-import { frozenProject, projectThumbnail } from './projectSnapshot.js';
-import { Artwork, ArtworkBookmark, ArtworkReaction, ArtworkComment, ArtworkReport, ModerationAction, ArtistFollow, Canvas, User, defaultUsername } from './models/index.js';
-import { recordActivity } from './notifications.js';
+import { frozenProject, projectThumbnail } from '../projectSnapshot.js';
+import { Artwork, ArtworkBookmark, ArtworkReaction, ArtworkComment, ArtworkReport, ModerationAction, ArtistFollow, Canvas, User, defaultUsername } from '../models/index.js';
+import { recordActivity } from './notificationsController.js';
 
-export const galleryRouter = Router();
 const oid = mongoose.isValidObjectId;
 const fail = (status, message) => { throw Object.assign(new Error(message), { status }); };
 const live = { hiddenAt: null, unpublishedAt: null };
@@ -67,7 +64,7 @@ async function publicProfile(id) {
     followers, following, created };
 }
 
-galleryRouter.get('/users/search', async (request, response) => {
+export async function searchUsers(request, response) {
   const query = cleanText(request.query.q || '', 40);
   if (query.length < 2) return response.json({ users: [] });
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -84,15 +81,15 @@ galleryRouter.get('/users/search', async (request, response) => {
     return rank(a) - rank(b) || a.displayName.localeCompare(b.displayName);
   });
   response.json({ users: await profileCards(results.slice(0, 20)) });
-});
+}
 
-galleryRouter.get('/users/me/artwork-choices', requireAuth, async (request, response) => {
+export async function artworkChoices(request, response) {
   const works = await Artwork.find({ authorId: request.user.id, ...visible }).select('title thumbnail')
     .sort({ createdAt: -1, _id: -1 }).limit(200);
   response.json({ artworks: works.map(art => ({ id: String(art.id), title: art.title, thumbnail: art.thumbnail })) });
-});
+}
 
-galleryRouter.patch('/users/me', requireAuth, async (request, response) => {
+export async function updateMyProfile(request, response) {
   const payload = request.body || {};
   const username = request.body?.username;
   const bio = request.body?.bio;
@@ -118,17 +115,16 @@ galleryRouter.patch('/users/me', requireAuth, async (request, response) => {
     throw error;
   }
   response.json({ user: await publicProfile(request.user.id) });
-});
+}
 
-galleryRouter.get('/users/:id', async (request, response) => {
+export async function getUserProfile(request, response) {
   const user = await publicProfile(request.params.id);
   const page = pageNumber(request.query.page);
   const works = await Artwork.find({ ...visible, authorId: user.id }).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * 24).limit(25);
   response.json({ user, artworks: works.slice(0, 24).map(summary), hasMore: works.length > 24, page, tab: 'created' });
-});
+}
 
-for (const kind of ['followers', 'following']) {
-  galleryRouter.get(`/users/:id/${kind}`, async (request, response) => {
+export const listProfileFollows = kind => async (request, response) => {
     const artist = await verifiedArtist(request.params.id);
     if (!artist) fail(404, 'Artist not found');
     const page = pageNumber(request.query.page);
@@ -142,22 +138,21 @@ for (const kind of ['followers', 'following']) {
     const byId = new Map(users.map(user => [String(user.id), user]));
     response.json({ users: await profileCards(ids.map(id => byId.get(String(id))).filter(Boolean)),
       hasMore: follows.length > 20, page });
-  });
-}
+};
 
-galleryRouter.get('/users/me/following-ids', requireAuth, async (request, response) => {
+export async function followingIds(request, response) {
   const ids = String(request.query.ids || '').split(',').filter(oid).slice(0, 40);
   const follows = await ArtistFollow.find({ followerId: request.user.id, artistId: { $in: ids } }).select('artistId');
   response.json({ ids: follows.map(follow => String(follow.artistId)) });
-});
+}
 
-galleryRouter.get('/users/:id/follow', requireAuth, async (request, response) => {
+export async function getFollowStatus(request, response) {
   const user = await publicProfile(request.params.id);
   const followed = Boolean(await ArtistFollow.exists({ followerId: request.user.id, artistId: user.id }));
   response.json({ following: followed, followers: user.followers });
-});
+}
 
-galleryRouter.put('/users/:id/follow', requireAuth, async (request, response) => {
+export async function followUser(request, response) {
   const artist = await verifiedArtist(request.params.id);
   if (!artist) fail(404, 'Artist not found');
   if (String(artist.id) === String(request.user.id)) fail(403, 'You cannot follow yourself');
@@ -171,25 +166,25 @@ galleryRouter.put('/users/:id/follow', requireAuth, async (request, response) =>
   }
   catch (error) { if (error.code !== 11000) throw error; }
   response.json({ following: true, followers: await ArtistFollow.countDocuments({ artistId: artist.id }) });
-});
+}
 
-galleryRouter.delete('/users/:id/follow', requireAuth, async (request, response) => {
+export async function unfollowUser(request, response) {
   const artist = await verifiedArtist(request.params.id);
   if (!artist) fail(404, 'Artist not found');
   await ArtistFollow.deleteOne({ followerId: request.user.id, artistId: artist.id });
   response.json({ following: false, followers: await ArtistFollow.countDocuments({ artistId: artist.id }) });
-});
+}
 
-galleryRouter.get('/following', requireAuth, async (request, response) => {
+export async function followingFeed(request, response) {
   const page = pageNumber(request.query.page);
   const follows = await ArtistFollow.find({ followerId: request.user.id }).select('artistId');
   const ids = follows.map(follow => follow.artistId);
   const works = ids.length ? await Artwork.find({ ...visible, authorId: { $in: ids } })
     .sort({ createdAt: -1, _id: -1 }).skip((page - 1) * 24).limit(25) : [];
   response.json({ artworks: works.slice(0, 24).map(summary), hasMore: works.length > 24, page, followingCount: ids.length });
-});
+}
 
-galleryRouter.get('/moderation/reports', requireAuth, async (request, response) => {
+export async function moderationReports(request, response) {
   if (!request.user.moderator) fail(403, 'Moderator access required');
   const reports = await ArtworkReport.find({ status: 'open' }).sort({ createdAt: -1 }).limit(100);
   const artworks = await Artwork.find({ _id: { $in: reports.map(report => report.artworkId) } }).select('title thumbnail');
@@ -200,9 +195,9 @@ galleryRouter.get('/moderation/reports', requireAuth, async (request, response) 
     artworkTitle: byArt.get(String(report.artworkId))?.title || 'Removed artwork',
     commentText: report.commentId ? byComment.get(String(report.commentId))?.text || 'Removed comment' : null,
     reason: report.reason, reporterId: String(report.reporterId), createdAt: report.createdAt })) });
-});
+}
 
-galleryRouter.post('/moderation/reports/:id', requireAuth, async (request, response) => {
+export async function resolveReport(request, response) {
   if (!request.user.moderator) fail(403, 'Moderator access required');
   if (!oid(request.params.id)) fail(404, 'Report not found');
   const action = request.body?.action;
@@ -222,9 +217,9 @@ galleryRouter.post('/moderation/reports/:id', requireAuth, async (request, respo
   await ModerationAction.create({ moderatorId: request.user.id, artworkId: report.artworkId, commentId: report.commentId, action,
     reason: cleanText(request.body?.reason || '', 500) });
   response.json({ status: action });
-});
+}
 
-galleryRouter.get('/', async (request, response) => {
+export async function listArtwork(request, response) {
   const page = pageNumber(request.query.page);
   const query = cleanText(request.query.q || '', 60).toLowerCase();
   const tag = request.query.tag ? cleanTags([request.query.tag])[0] : null;
@@ -237,9 +232,9 @@ galleryRouter.get('/', async (request, response) => {
   ] } : {}) };
   const works = await Artwork.find(filter).sort(sort).skip((page - 1) * 24).limit(25);
   response.json({ artworks: works.slice(0, 24).map(summary), hasMore: works.length > 24, page });
-});
+}
 
-galleryRouter.get('/saved', requireAuth, async (request, response) => {
+export async function savedArtwork(request, response) {
   const page = pageNumber(request.query.page);
   const rows = await ArtworkBookmark.aggregate([
     { $match: { userId: new mongoose.Types.ObjectId(request.user.id) } },
@@ -250,9 +245,9 @@ galleryRouter.get('/saved', requireAuth, async (request, response) => {
     { $skip: (page - 1) * 24 }, { $limit: 25 },
   ]);
   response.json({ artworks: rows.slice(0, 24).map(row => summary(row.art)), hasMore: rows.length > 24, page });
-});
+}
 
-galleryRouter.post('/', requireAuth, async (request, response) => {
+export async function publishArtwork(request, response) {
   const title = cleanText(request.body?.title, 120, true);
   const description = cleanText(request.body?.description ?? '', 2000);
   const tags = cleanTags(request.body?.tags ?? []);
@@ -272,45 +267,45 @@ galleryRouter.post('/', requireAuth, async (request, response) => {
   const art = await Artwork.create({ authorId: request.user.id, title, description, tags, visibility: access, source, contributors,
     project, coverFrameId, thumbnail: projectThumbnail(project, coverFrameId) });
   response.status(201).json({ artwork: summary(art) });
-});
+}
 
-galleryRouter.get('/:id', (request, response, next) => request.headers.authorization ? requireAuth(request, response, next) : next(), async (request, response) => {
+export async function getArtwork(request, response) {
   if (!oid(request.params.id)) fail(404, 'Artwork not found');
   const art = await Artwork.findById(request.params.id);
   if (!usable(art, request.user)) fail(404, 'Artwork not found');
   response.json({ artwork: { ...summary(art), project: art.project } });
-});
+}
 
-galleryRouter.get('/:id/owner', requireAuth, async (request, response) => {
+export async function getOwnArtwork(request, response) {
   const art = oid(request.params.id) && await Artwork.findOne({ _id: request.params.id, authorId: request.user.id });
   if (!art) fail(404, 'Artwork not found');
   response.json({ artwork: summary(art) });
-});
+}
 
-galleryRouter.patch('/:id/visibility', requireAuth, async (request, response) => {
+export async function setArtworkVisibility(request, response) {
   const art = oid(request.params.id) && await Artwork.findOne({ _id: request.params.id, authorId: request.user.id, unpublishedAt: null });
   if (!art) fail(404, 'Artwork not found');
   art.visibility = visibility(request.body?.visibility);
   await art.save();
   response.json({ artwork: summary(art) });
-});
+}
 
-galleryRouter.patch('/:id/tags', requireAuth, async (request, response) => {
+export async function setArtworkTags(request, response) {
   const art = oid(request.params.id) && await Artwork.findOne({ _id: request.params.id, authorId: request.user.id, unpublishedAt: null });
   if (!art) fail(404, 'Artwork not found');
   art.tags = cleanTags(request.body?.tags);
   await art.save();
   response.json({ artwork: summary(art) });
-});
+}
 
-galleryRouter.get('/:id/bookmark', requireAuth, async (request, response) => {
+export async function getBookmark(request, response) {
   if (!oid(request.params.id)) fail(404, 'Artwork not found');
   const art = await Artwork.findById(request.params.id);
   if (!canInteract(art)) fail(404, 'Artwork not found');
   response.json({ saved: Boolean(await ArtworkBookmark.exists({ artworkId: art.id, userId: request.user.id })) });
-});
+}
 
-galleryRouter.put('/:id/bookmark', requireAuth, async (request, response) => {
+export async function addBookmark(request, response) {
   if (!oid(request.params.id)) fail(404, 'Artwork not found');
   const art = await Artwork.findById(request.params.id);
   if (!canInteract(art)) fail(404, 'Artwork not found');
@@ -320,29 +315,29 @@ galleryRouter.put('/:id/bookmark', requireAuth, async (request, response) => {
     { $setOnInsert: { artworkId: art.id, userId: request.user.id } }, { upsert: true }); }
   catch (error) { if (error.code !== 11000) throw error; }
   response.json({ saved: true });
-});
+}
 
-galleryRouter.delete('/:id/bookmark', requireAuth, async (request, response) => {
+export async function removeBookmark(request, response) {
   if (!oid(request.params.id)) fail(404, 'Artwork not found');
   await ArtworkBookmark.deleteOne({ artworkId: request.params.id, userId: request.user.id });
   response.json({ saved: false });
-});
+}
 
-galleryRouter.post('/:id/unpublish', requireAuth, async (request, response) => {
+export async function unpublishArtwork(request, response) {
   const art = oid(request.params.id) && await Artwork.findOneAndUpdate({ _id: request.params.id, authorId: request.user.id, unpublishedAt: null },
     { $set: { unpublishedAt: new Date() } }, { new: true });
   if (!art) fail(404, 'Artwork not found');
   response.json({ artwork: summary(art) });
-});
+}
 
-galleryRouter.get('/:id/reaction', requireAuth, async (request, response) => {
+export async function getReaction(request, response) {
   const art = oid(request.params.id) && await Artwork.findById(request.params.id);
   if (!usable(art, request.user)) fail(404, 'Artwork not found');
   const reaction = await ArtworkReaction.findOne({ artworkId: art.id, userId: request.user.id });
   response.json({ value: reaction?.value || null });
-});
+}
 
-galleryRouter.put('/:id/reaction', requireAuth, async (request, response) => {
+export async function setReaction(request, response) {
   const art = oid(request.params.id) && await Artwork.findById(request.params.id);
   if (!canInteract(art)) fail(404, 'Artwork not found');
   if (String(art.authorId) === String(request.user.id)) fail(403, 'You cannot react to your own artwork');
@@ -372,9 +367,9 @@ galleryRouter.put('/:id/reaction', requireAuth, async (request, response) => {
   if (newLike && current?.value === 'like') await recordActivity({ recipientId: art.authorId, actorId: request.user.id,
     type: 'like', eventKey: `like:${request.user.id}:${art.id}`, artworkId: art.id });
   response.json({ value: current?.value || null, likes: updated.likes, dislikes: updated.dislikes });
-});
+}
 
-galleryRouter.get('/:id/comments', async (request, response) => {
+export async function listComments(request, response) {
   const art = oid(request.params.id) && await Artwork.findById(request.params.id);
   if (!usable(art)) fail(404, 'Artwork not found');
   const before = request.query.before;
@@ -383,9 +378,9 @@ galleryRouter.get('/:id/comments', async (request, response) => {
   const comments = await ArtworkComment.find(filter).sort({ _id: -1 }).limit(21);
   response.json({ comments: comments.slice(0, 20).map(comment => ({ id: String(comment.id), author: { id: String(comment.authorId), displayName: comment.authorName }, text: comment.text, createdAt: comment.createdAt })),
     nextBefore: comments.length > 20 ? String(comments[19].id) : null });
-});
+}
 
-galleryRouter.post('/:id/comments', requireAuth, async (request, response) => {
+export async function addComment(request, response) {
   const art = oid(request.params.id) && await Artwork.findById(request.params.id);
   if (!canInteract(art)) fail(404, 'Artwork not found');
   const text = cleanText(request.body?.text, 1000, true);
@@ -394,9 +389,9 @@ galleryRouter.post('/:id/comments', requireAuth, async (request, response) => {
   await recordActivity({ recipientId: art.authorId, actorId: request.user.id, type: 'comment',
     eventKey: `comment:${comment.id}`, artworkId: art.id });
   response.status(201).json({ comment: { id: String(comment.id), text, author: { id: String(request.user.id), displayName: request.user.displayName }, createdAt: comment.createdAt } });
-});
+}
 
-galleryRouter.delete('/:id/comments/:commentId', requireAuth, async (request, response) => {
+export async function deleteComment(request, response) {
   const art = oid(request.params.id) && await Artwork.findById(request.params.id);
   if (!art || !oid(request.params.commentId)) fail(404, 'Comment not found');
   const comment = await ArtworkComment.findOne({ _id: request.params.commentId, artworkId: art.id, deletedAt: null });
@@ -406,9 +401,9 @@ galleryRouter.delete('/:id/comments/:commentId', requireAuth, async (request, re
   await comment.save();
   if (!comment.hiddenAt) await Artwork.updateOne({ _id: art.id }, { $inc: { commentCount: -1 } });
   response.status(204).end();
-});
+}
 
-galleryRouter.post('/:id/reports', requireAuth, async (request, response) => {
+export async function reportArtwork(request, response) {
   const art = oid(request.params.id) && await Artwork.findById(request.params.id);
   if (!canInteract(art)) fail(404, 'Artwork not found');
   const reason = request.body?.reason;
@@ -432,4 +427,4 @@ galleryRouter.post('/:id/reports', requireAuth, async (request, response) => {
     if (commentId && hidden.modifiedCount) await Artwork.updateOne({ _id: art.id }, { $inc: { commentCount: -1 } });
   }
   response.status(201).json({ message: 'Report received', hidden: count >= 3 });
-});
+}

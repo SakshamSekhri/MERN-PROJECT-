@@ -1,0 +1,35 @@
+import { Router } from 'express';
+import { requireAuth } from '../controllers/authController.js';
+import { searchUsers, artworkChoices, updateMyProfile, getUserProfile, listProfileFollows, followingIds, getFollowStatus, followUser, unfollowUser, followingFeed, moderationReports, resolveReport, listArtwork, savedArtwork, publishArtwork, getArtwork, getOwnArtwork, setArtworkVisibility, setArtworkTags, getBookmark, addBookmark, removeBookmark, unpublishArtwork, getReaction, setReaction, listComments, addComment, deleteComment, reportArtwork } from '../controllers/galleryController.js';
+
+export const galleryRouter = Router();
+
+galleryRouter.get('/users/search',searchUsers);
+galleryRouter.get('/users/me/artwork-choices', requireAuth,artworkChoices);
+galleryRouter.patch('/users/me', requireAuth,updateMyProfile);
+galleryRouter.get('/users/:id',getUserProfile);
+for (const kind of ['followers', 'following']) galleryRouter.get(`/users/:id/${kind}`, listProfileFollows(kind));
+galleryRouter.get('/users/me/following-ids', requireAuth,followingIds);
+galleryRouter.get('/users/:id/follow', requireAuth,getFollowStatus);
+galleryRouter.put('/users/:id/follow', requireAuth,followUser);
+galleryRouter.delete('/users/:id/follow', requireAuth,unfollowUser);
+galleryRouter.get('/following', requireAuth,followingFeed);
+galleryRouter.get('/moderation/reports', requireAuth,moderationReports);
+galleryRouter.post('/moderation/reports/:id', requireAuth,resolveReport);
+galleryRouter.get('/',listArtwork);
+galleryRouter.get('/saved', requireAuth,savedArtwork);
+galleryRouter.post('/', requireAuth,publishArtwork);
+galleryRouter.get('/:id', (request, response, next) => request.headers.authorization ? requireAuth(request, response, next) : next(),getArtwork);
+galleryRouter.get('/:id/owner', requireAuth,getOwnArtwork);
+galleryRouter.patch('/:id/visibility', requireAuth,setArtworkVisibility);
+galleryRouter.patch('/:id/tags', requireAuth,setArtworkTags);
+galleryRouter.get('/:id/bookmark', requireAuth,getBookmark);
+galleryRouter.put('/:id/bookmark', requireAuth,addBookmark);
+galleryRouter.delete('/:id/bookmark', requireAuth,removeBookmark);
+galleryRouter.post('/:id/unpublish', requireAuth,unpublishArtwork);
+galleryRouter.get('/:id/reaction', requireAuth,getReaction);
+galleryRouter.put('/:id/reaction', requireAuth,setReaction);
+galleryRouter.get('/:id/comments',listComments);
+galleryRouter.post('/:id/comments', requireAuth,addComment);
+galleryRouter.delete('/:id/comments/:commentId', requireAuth,deleteComment);
+galleryRouter.post('/:id/reports', requireAuth,reportArtwork);

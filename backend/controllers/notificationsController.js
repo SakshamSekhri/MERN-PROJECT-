@@ -1,9 +1,6 @@
-import { Router } from 'express';
 import mongoose from 'mongoose';
-import { requireAuth } from './auth.js';
-import { ActivityNotification, User } from './models/index.js';
+import { ActivityNotification, User } from '../models/index.js';
 
-export const notificationsRouter = Router();
 
 export async function recordActivity({ recipientId, actorId = null, type, eventKey, artworkId = null }) {
   if (actorId && String(recipientId) === String(actorId)) return;
@@ -32,20 +29,20 @@ async function listNotifications(userId, page) {
   hasMore: rows.length > 20, page, unread };
 }
 
-notificationsRouter.get('/', requireAuth, async (request, response) => {
+export async function getNotifications(request, response) {
   const page = Math.max(1, Math.min(1000, Number.parseInt(request.query.page, 10) || 1));
   response.json(await listNotifications(request.user.id, page));
-});
+}
 
-notificationsRouter.patch('/:id/read', requireAuth, async (request, response) => {
+export async function markNotificationRead(request, response) {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ error: 'Notification not found' });
   const changed = await ActivityNotification.findOneAndUpdate({ _id: request.params.id, recipientId: request.user.id },
     { $set: { readAt: new Date() } }, { new: true });
   if (!changed) return response.status(404).json({ error: 'Notification not found' });
   response.json({ readAt: changed.readAt });
-});
+}
 
-notificationsRouter.post('/read-all', requireAuth, async (request, response) => {
+export async function markAllNotificationsRead(request, response) {
   await ActivityNotification.updateMany({ recipientId: request.user.id, readAt: null }, { $set: { readAt: new Date() } });
   response.json({ unread: 0 });
-});
+}

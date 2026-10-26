@@ -1,7 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { restoreVercelApiPath } from '../backend/vercelPath.js';
+
+test('Vercel maps every API path to the existing Express function', () => {
+  const deployment = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  assert.deepEqual(Object.keys(deployment.functions), ['api/index.js']);
+  assert.deepEqual(deployment.rewrites, [
+    { source: '/api/:path*', destination: '/api/index?pv_route=:path*' },
+  ]);
+  for (const route of ['health', 'auth/login', 'projects', 'gallery', 'contact']) {
+    assert.equal(restoreVercelApiPath(`/api/index?pv_route=${encodeURIComponent(route)}`), `/api/${route}`);
+  }
+});
+
+test('Postman collection targets a configurable new deployment and covers health, auth and project CRUD', () => {
+  const collection = JSON.parse(readFileSync(new URL('../postman/PixelVerse-Evaluation-2.postman_collection.json', import.meta.url), 'utf8'));
+  const variables = Object.fromEntries(collection.variable.map(({ key, value }) => [key, value]));
+  assert.match(variables.baseUrl, /your-evaluation-2-app/);
+  assert.ok(collection.item.every(({ request }) => request.url.startsWith('{{baseUrl}}/api/')));
+  const routes = collection.item.map(({ request }) => `${request.method} ${request.url.replace('{{baseUrl}}', '')}`);
+  for (const expected of ['GET /api/health', 'POST /api/auth/login', 'POST /api/projects',
+    'GET /api/projects', 'GET /api/projects/{{projectId}}', 'PUT /api/projects/{{projectId}}',
+    'DELETE /api/projects/{{projectId}}']) assert.ok(routes.includes(expected), expected);
+});
 
 test('Vercel rewrite preserves nested API paths and query parameters', () => {
   assert.equal(restoreVercelApiPath('/api/index?pv_route=projects%2Fabc&view=full'),
@@ -40,6 +63,9 @@ test('the Vercel API entry connects to MongoDB and serves the existing Express r
       const gallery = await fetch(`${origin}/api/index?pv_route=gallery&page=1`);
       assert.equal(gallery.status, 200);
       assert.ok(Array.isArray((await gallery.json()).artworks));
+      const projects = await fetch(`${origin}/api/index?pv_route=projects`);
+      assert.equal(projects.status, 401);
+      assert.equal((await projects.json()).error, 'Sign in required');
       const login = await fetch(`${origin}/api/index?pv_route=auth%2Flogin`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'invalid', password: 'invalid' }),

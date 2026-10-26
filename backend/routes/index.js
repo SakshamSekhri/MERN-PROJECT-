@@ -1,9 +1,9 @@
 import { healthStatus } from '../controllers/healthController.js';
-import { authRouter } from '../auth.js';
+import { authRouter } from './auth.js';
 import { projectsRouter } from './projects.js';
-import { galleryRouter } from '../gallery.js';
-import { contactRouter } from '../contact.js';
-import { notificationsRouter } from '../notifications.js';
+import { galleryRouter } from './gallery.js';
+import { contactRouter } from './contact.js';
+import { notificationsRouter } from './notifications.js';
 
 export function mountApiRoutes(app) {
   app.get('/api/health', healthStatus);

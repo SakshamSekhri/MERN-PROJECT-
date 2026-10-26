@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../auth.js';
+import { requireAuth } from '../controllers/authController.js';
 import { listProjects, createProject, getProject, updateProject, deleteProject } from '../controllers/projectsController.js';
 
 export const projectsRouter = Router();

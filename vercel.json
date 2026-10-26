@@ -4,11 +4,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.js": { "maxDuration": 60 },
-    "api/live.js": { "maxDuration": 60 }
+    "api/index.js": { "maxDuration": 60 }
   },
   "rewrites": [
-    { "source": "/api/auth/live", "destination": "/api/live" },
     { "source": "/api/:path*", "destination": "/api/index?pv_route=:path*" }
   ]
 }
