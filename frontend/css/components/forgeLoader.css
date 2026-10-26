@@ -1,0 +1,167 @@
+/* ═══════════════════════════════════════════════
+   Component: PixelVerse 6-Strike Heavy Forging Loader
+   ═══════════════════════════════════════════════ */
+
+.forge-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(1100px 700px at 50% 35%, #1a2136 0%, #111625 60%, #050508 100%);
+  color: var(--pv-text);
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
+  pointer-events: all;
+  user-select: none;
+}
+
+.forge-overlay.is-fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Progressive 6-Level Screen Shake ── */
+.forge-overlay.shake-1 { animation: forge-shake-1 0.12s ease-out; }
+.forge-overlay.shake-2 { animation: forge-shake-2 0.14s ease-out; }
+.forge-overlay.shake-3 { animation: forge-shake-3 0.16s ease-out; }
+.forge-overlay.shake-4 { animation: forge-shake-4 0.18s ease-out; }
+.forge-overlay.shake-5 { animation: forge-shake-5 0.20s ease-out; }
+.forge-overlay.shake-6 { animation: forge-shake-6 0.30s ease-out; }
+
+@keyframes forge-shake-1 {
+  0%, 100% { transform: translate(0, 0); }
+  30%  { transform: translate(-2px, 2px); }
+  70%  { transform: translate(2px, -1px); }
+}
+
+@keyframes forge-shake-2 {
+  0%, 100% { transform: translate(0, 0); }
+  25%  { transform: translate(-3px, 3px); }
+  75%  { transform: translate(3px, -2px); }
+}
+
+@keyframes forge-shake-3 {
+  0%, 100% { transform: translate(0, 0); }
+  20%  { transform: translate(-5px, 4px); }
+  60%  { transform: translate(5px, -4px); }
+}
+
+@keyframes forge-shake-4 {
+  0%, 100% { transform: translate(0, 0); }
+  20%  { transform: translate(-7px, 6px); }
+  60%  { transform: translate(7px, -5px); }
+}
+
+@keyframes forge-shake-5 {
+  0%, 100% { transform: translate(0, 0); }
+  15%  { transform: translate(-9px, 7px); }
+  65%  { transform: translate(9px, -7px); }
+}
+
+@keyframes forge-shake-6 {
+  0%, 100% { transform: translate(0, 0); }
+  10%  { transform: translate(-12px, 10px) rotate(-1.5deg); }
+  30%  { transform: translate(12px, -10px) rotate(1.5deg); }
+  50%  { transform: translate(-8px, 6px) rotate(-0.5deg); }
+  75%  { transform: translate(6px, -4px); }
+}
+
+/* ── Canvas & Stage ── */
+.forge-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.forge-canvas {
+  display: block;
+  width: 440px;
+  height: 300px;
+  image-rendering: pixelated;
+}
+
+/* ── 2-Line Hero Logo Hierarchy ── */
+.forge-logo-container {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* Line 1: PIXELVERSE */
+.forge-line-1 {
+  display: flex;
+  gap: 5px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.10em;
+}
+
+.forge-line-1 .char {
+  display: inline-block;
+  width: 22px;
+  text-align: center;
+  color: rgba(238, 241, 245, 0.1);
+  border-bottom: 3px solid rgba(238, 241, 245, 0.15);
+  transition: color 0.15s ease, border-color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.forge-line-1 .char.forged {
+  color: var(--pv-sun);
+  border-bottom-color: var(--pv-sun-lit);
+  text-shadow: 0 0 16px rgba(232, 141, 48, 0.9), 0 0 32px rgba(247, 180, 94, 0.6);
+  animation: char-pop 0.22s cubic-bezier(0.17, 0.89, 0.32, 1.28) both;
+}
+
+/* Line 2: STUDIO */
+.forge-line-2 {
+  display: flex;
+  gap: 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+}
+
+.forge-line-2 .char {
+  display: inline-block;
+  width: 22px;
+  text-align: center;
+  color: rgba(238, 241, 245, 0.08);
+  border-bottom: 2px solid rgba(238, 241, 245, 0.12);
+  transition: color 0.15s ease, border-color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.forge-line-2 .char.forged {
+  color: var(--pv-magenta);
+  border-bottom-color: var(--pv-magenta-lit);
+  text-shadow: 0 0 16px rgba(217, 43, 180, 0.9), 0 0 28px rgba(255, 111, 220, 0.6);
+  animation: char-pop 0.22s cubic-bezier(0.17, 0.89, 0.32, 1.28) both;
+}
+
+@keyframes char-pop {
+  0%   { transform: scale(1.6) translateY(-6px); filter: brightness(2); }
+  50%  { transform: scale(0.9) translateY(2px); }
+  100% { transform: scale(1) translateY(0); filter: brightness(1); }
+}
+
+.forge-footer-tag {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--pv-muted);
+  letter-spacing: 0.18em;
+  opacity: 0.85;
+}
