@@ -10,11 +10,7 @@
     "build": "vite build",
     "test": "node --test --test-concurrency=1 tests/*.test.js tests/*.test.mjs",
     "start:api": "node backend/index.js",
-    "seed:challenges": "node scripts/seed-local-challenges.js",
     "seed:gallery": "node scripts/seed-gallery-examples.js",
-    "backup:db": "node scripts/backup-db.js",
-    "restore:db": "node scripts/restore-db.js",
-    "load:rooms": "node scripts/load-rooms.js",
     "moderator": "node scripts/set-moderator.js"
   },
   "dependencies": {
@@ -26,7 +22,6 @@
     "jose": "^6.2.12",
     "mongoose": "^8.9.0",
     "nodemailer": "^10.1.0",
-    "vite": "^6.0.0",
-    "ws": "^8.22.0"
+    "vite": "^6.0.0"
   }
 }
