@@ -8,7 +8,7 @@ import { gridAt } from '../frontend/js/replay/replay.js';
 import {
   serialise, deserialise, saveProject, loadProject, makeAutosave, SLOT_BLANK,
 } from '../frontend/js/core/project.js';
-import { saveRecovery, listRecoveries } from '../frontend/js/core/localRecovery.js';
+import { saveRecovery, listRecoveries, deleteRecovery } from '../frontend/js/core/localRecovery.js';
 
 function finalGrid(journal, frame, size) {
   const entries = journal.forFrame(frame.id);
@@ -58,6 +58,11 @@ test('opening multiple cloud projects retains separate local artwork and replay 
   const recovered = loadProject(firstSlot);
   assert.equal(recovered.frames[0].grid[0][0], '#ff2e88');
   assert.equal(recovered.journal.entries.length, 1);
+  assert.equal(loadProject(secondSlot).frames[0].grid[1][1], '#22d3ee');
+  assert.throws(() => deleteRecovery(SLOT_BLANK), /Invalid local recovery copy/);
+  deleteRecovery(firstSlot);
+  assert.equal(loadProject(firstSlot), null);
+  assert.equal(listRecoveries().length, 1);
   assert.equal(loadProject(secondSlot).frames[0].grid[1][1], '#22d3ee');
 });
 

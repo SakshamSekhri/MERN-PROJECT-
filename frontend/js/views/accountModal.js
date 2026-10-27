@@ -275,6 +275,8 @@ function renderSignedIn() {
   const recoveries = callbacks.listBackups?.() ?? [];
   if (!recoveries.length) recoveryList.textContent = 'No recovery copies yet. Opening a cloud project creates one here.';
   recoveries.forEach(copy => {
+    const row = document.createElement('div');
+    row.className = 'pv-account__project-row';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn--ghost pv-account__project';
@@ -289,7 +291,21 @@ function renderSignedIn() {
       title = 'Untitled artwork';
       setMessage('Local copy restored. The canvas it replaced also has a recovery copy.');
     }));
-    recoveryList.appendChild(button);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn btn--ghost pv-account__project-delete';
+    remove.textContent = '×';
+    remove.title = 'Delete local recovery copy';
+    remove.setAttribute('aria-label', `Delete local recovery copy from ${date.textContent}`);
+    remove.addEventListener('click', () => {
+      if (!confirm('Delete this local recovery copy from this browser? This cannot be undone. Your current canvas and cloud projects will stay.')) return;
+      void run(async () => {
+        callbacks.deleteBackup(copy.slot);
+        setMessage('Local recovery copy deleted. Your current canvas and cloud projects are unchanged.');
+      });
+    });
+    row.append(button, remove);
+    recoveryList.appendChild(row);
   });
   content.querySelector('#pv-recovery-count').textContent = `(${recoveries.length})`;
   recoveryList.classList.toggle('is-scrollable', recoveries.length > 3);

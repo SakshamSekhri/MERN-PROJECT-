@@ -43,7 +43,7 @@ import {
 } from '../core/project.js';
 import { formatBytes } from '../core/codec.js';
 import { bindScreenPicker } from '../core/screenPicker.js';
-import { saveRecovery, listRecoveries, isRecoverySlot } from '../core/localRecovery.js';
+import { saveRecovery, listRecoveries, deleteRecovery, isRecoverySlot } from '../core/localRecovery.js';
 
 let renderer, refRenderer, timeline;
 let painting = false;
@@ -104,6 +104,7 @@ export function initEditor({ slot = SLOT_BLANK } = {}) {
       reportSave(saveProject(snapshot(), activeSlot));
     },
     listBackups: listRecoveries,
+    deleteBackup: deleteRecovery,
     restoreBackup: async slot => {
       if (!isRecoverySlot(slot)) throw new Error('Invalid local recovery copy.');
       const restored = loadProject(slot);

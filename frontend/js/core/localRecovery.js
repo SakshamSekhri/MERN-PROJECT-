@@ -34,3 +34,8 @@ export function listRecoveries() {
   }
   return backups.sort((a, b) => (b.savedAt ?? 0) - (a.savedAt ?? 0));
 }
+
+export function deleteRecovery(slot) {
+  if (!isRecoverySlot(slot)) throw new Error('Invalid local recovery copy.');
+  clearProject(slot);
+}
